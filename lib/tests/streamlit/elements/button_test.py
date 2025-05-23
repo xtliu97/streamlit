@@ -172,6 +172,23 @@ class ButtonTest(DeltaGeneratorTestCase):
         )
         assert c.icon_position == expected
 
+    def test_colored_material_icon(self):
+        """Test that it can be called with material icon."""
+        st.button("the label", icon=":red[:material/thumb_up:]")
+
+        c = self.get_delta_from_queue().new_element.button
+        assert c.icon == ":red[:material/thumb_up:]"
+
+    def test_invalid_colored_material_icon(self):
+        """Test that invalid colored material icons raise appropriate errors."""
+        with pytest.raises(StreamlitAPIException) as e:
+            st.button("the label", icon=":red[👍]")
+        assert "can only be used with Material icons." in str(e.value)
+
+        with pytest.raises(StreamlitAPIException) as e:
+            st.button("the label", icon=":invalid[:material/thumb_up:]")
+        assert "is not a valid color name." in str(e.value)
+
     @parameterized.expand(get_button_command_matrix())
     def test_just_disabled(self, name: str, command: Callable[..., Any]):
         """Test that it can be called with disabled param."""
