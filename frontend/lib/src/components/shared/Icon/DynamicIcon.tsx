@@ -22,6 +22,7 @@ import { IconSize, EmotionTheme, getMarkdownTextColors } from "~lib/theme"
 import { EmojiIcon } from "./Icon"
 import MaterialFontIcon from "./Material/MaterialFontIcon"
 import { StyledDynamicIcon, StyledImageIcon } from "./styled-components"
+import { hasLightBackgroundColor } from "~lib/theme"
 
 interface IconPackEntry {
   pack: string
@@ -141,6 +142,7 @@ export const DynamicIcon = (props: DynamicIconProps): React.ReactElement => {
     props.iconValue
   )
   const theme: EmotionTheme = useTheme()
+  const themeMode = hasLightBackgroundColor(theme) ? "light" : "dark"
   const colorMapping = createColorMapping(theme)
   const style = parsedColor ? colorMapping.get(parsedColor) : {}
 
@@ -156,7 +158,7 @@ export const DynamicIcon = (props: DynamicIconProps): React.ReactElement => {
           <EmojiIcon {...mergedProps}>&nbsp;</EmojiIcon>
         </StyledDynamicIcon>
       }
-      key={mergedProps.iconValue}
+      key={`${mergedProps.iconValue}-${themeMode}`}
     >
       <DynamicIconDispatcher {...mergedProps} />
     </Suspense>
