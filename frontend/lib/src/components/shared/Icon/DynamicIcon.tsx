@@ -15,14 +15,19 @@
  */
 
 import React, { Suspense } from "react"
+
 import { useTheme } from "@emotion/react"
 
-import { IconSize, EmotionTheme, getMarkdownTextColors } from "~lib/theme"
+import {
+  EmotionTheme,
+  getMarkdownTextColors,
+  hasLightBackgroundColor,
+  IconSize,
+} from "~lib/theme"
 
 import { EmojiIcon } from "./Icon"
 import MaterialFontIcon from "./Material/MaterialFontIcon"
 import { StyledDynamicIcon, StyledImageIcon } from "./styled-components"
-import { hasLightBackgroundColor } from "~lib/theme"
 
 interface IconPackEntry {
   pack: string
@@ -114,8 +119,8 @@ const DynamicIconDispatcher = ({
   }
 }
 
-function createColorMapping(theme: EmotionTheme): Map<string, Object> {
-  const { red, orange, yellow, green, blue, violet, purple, gray, primary } =
+function createColorMapping(theme: EmotionTheme): Map<string, object> {
+  const { red, orange, green, blue, violet, gray, primary } =
     getMarkdownTextColors(theme)
 
   return new Map(
