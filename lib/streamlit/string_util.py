@@ -93,7 +93,7 @@ def validate_icon_or_emoji(icon: str | None) -> str:
 
 def validate_color(maybe_color: str) -> str:
     """Validate a color name and return it in normalized format if valid."""
-    VALID_COLORS = {
+    valid_colors = {
         "blue",
         "green",
         "orange",
@@ -105,12 +105,12 @@ def validate_color(maybe_color: str) -> str:
         "primary",
     }
 
-    if maybe_color in VALID_COLORS:
+    if maybe_color in valid_colors:
         return maybe_color
 
     raise StreamlitAPIException(
         f'The value "{maybe_color}" is not a valid color name. Please use a valid color in: '
-        f"{', '.join(VALID_COLORS)}."
+        f"{', '.join(valid_colors)}."
     )
 
 

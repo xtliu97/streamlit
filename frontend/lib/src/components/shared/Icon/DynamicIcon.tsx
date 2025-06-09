@@ -15,13 +15,14 @@
  */
 
 import { Suspense } from "react"
-import { useTheme } from "@emotion/react"
+
+import { useEmotionTheme } from "@streamlit/lib"
 
 import {
-  IconSize,
   EmotionTheme,
   getMarkdownTextColors,
   hasLightBackgroundColor,
+  IconSize,
 } from "~lib/theme"
 
 import { EmojiIcon } from "./Icon"
@@ -134,8 +135,8 @@ const DynamicIconDispatcher = ({
   }
 }
 
-function createColorMapping(theme: EmotionTheme): Map<string, Object> {
-  const { red, orange, yellow, green, blue, violet, purple, gray, primary } =
+function createColorMapping(theme: EmotionTheme): Map<string, object> {
+  const { red, orange, green, blue, violet, gray, primary } =
     getMarkdownTextColors(theme)
 
   return new Map(
@@ -161,7 +162,7 @@ export const DynamicIcon = (props: DynamicIconProps): React.ReactElement => {
   const { color: parsedColor, iconValue: parsedIconValue } = parseColorAndIcon(
     props.iconValue
   )
-  const theme: EmotionTheme = useTheme()
+  const theme: EmotionTheme = useEmotionTheme()
   const themeMode = hasLightBackgroundColor(theme) ? "light" : "dark"
   const colorMapping = createColorMapping(theme)
   const style = parsedColor ? colorMapping.get(parsedColor) : {}
