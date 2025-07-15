@@ -31,7 +31,6 @@ interface MaterialIconProps {
   margin?: string
   padding?: string
   testid?: string
-  style?: React.CSSProperties
 }
 
 const getDefaultProps = ({

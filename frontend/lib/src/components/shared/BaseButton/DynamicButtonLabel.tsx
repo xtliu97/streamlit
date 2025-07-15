@@ -49,8 +49,9 @@ export const DynamicButtonLabel = ({
     return formatShortcutForDisplay(shortcut, { isMac: isFromMac() })
   }, [shortcut])
 
-  const isMaterialIcon = icon?.match(/^:[^[]+\[:material\/[^\]]+\]$/)
-  
+  const isMaterialIcon = icon?.match(
+    /:.*\[:material\/[^:\]]+:\]|^:material\/[^:\]]+:/
+  )
   // Material icons need to be larger to render similar size of emojis
   const dynamicIconSize = iconSize ?? (isMaterialIcon ? "lg" : "base")
 

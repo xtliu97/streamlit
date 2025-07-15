@@ -189,6 +189,10 @@ class ButtonTest(DeltaGeneratorTestCase):
             st.button("the label", icon=":invalid[:material/thumb_up:]")
         assert "is not a valid color name." in str(e.value)
 
+        with pytest.raises(StreamlitAPIException) as e:
+            st.button("the label", icon="[:material/thumb_up:]:blue")
+        assert " is not a valid emoji." in str(e.value)
+
     @parameterized.expand(get_button_command_matrix())
     def test_just_disabled(self, name: str, command: Callable[..., Any]):
         """Test that it can be called with disabled param."""
