@@ -165,11 +165,11 @@ export const DynamicIcon = (props: DynamicIconProps): React.ReactElement => {
   const theme: EmotionTheme = useEmotionTheme()
   const themeMode = hasLightBackgroundColor(theme) ? "light" : "dark"
   const colorMapping = createColorMapping(theme)
-  const style = parsedColor ? colorMapping.get(parsedColor) : {}
+  const colorStyle = parsedColor ? colorMapping.get(parsedColor) : {}
 
   const mergedProps = {
     ...props,
-    style,
+    ...colorStyle,
     iconValue: parsedIconValue,
   }
   return (
