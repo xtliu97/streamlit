@@ -141,3 +141,6 @@ st.button(
     icon_position="right",
     key="icon_right_material",
 )
+
+st.button("Home", icon=":red[:material/home:]")
+st.button("Settings", icon=":rainbow[:material/settings:]")

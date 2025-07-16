@@ -29,7 +29,7 @@ from e2e_playwright.shared.app_utils import (
     get_expander,
 )
 
-TOTAL_BUTTONS = 30
+TOTAL_BUTTONS = 32
 
 
 def test_button_widget_rendering(
@@ -286,3 +286,12 @@ def test_button_with_spinner_icon(app: Page):
     button = get_button(app, "Button with spinner icon")
     # Check that the spinner icon is visible:
     expect(button.get_by_test_id("stSpinnerIcon")).to_be_visible()
+
+
+def test_colored_material_icon(app: Page, assert_snapshot: ImageCompareFunction):
+    """Test colored material icon buttons are rendered correctly."""
+    material_icon_button = app.get_by_test_id("stButton").nth(30)
+    assert_snapshot(material_icon_button, name="st_button-material_icon_red")
+
+    material_icon_button = app.get_by_test_id("stButton").nth(31)
+    assert_snapshot(material_icon_button, name="st_button-material_icon_rainbow")
