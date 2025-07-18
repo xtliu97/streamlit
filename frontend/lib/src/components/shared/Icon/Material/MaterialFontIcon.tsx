@@ -74,3 +74,4 @@ const MaterialFontIcon = ({
 }
 
 export default MaterialFontIcon
+export type { StyledMaterialIconProps }

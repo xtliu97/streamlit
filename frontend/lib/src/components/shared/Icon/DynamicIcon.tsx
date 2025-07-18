@@ -26,7 +26,9 @@ import {
 } from "~lib/theme"
 
 import { EmojiIcon } from "./Icon"
-import MaterialFontIcon from "./Material/MaterialFontIcon"
+import MaterialFontIcon, {
+  StyledMaterialIconProps,
+} from "./Material/MaterialFontIcon"
 import {
   StyledDynamicIcon,
   StyledImageIcon,
@@ -135,7 +137,9 @@ const DynamicIconDispatcher = ({
   }
 }
 
-function createColorMapping(theme: EmotionTheme): Map<string, object> {
+function createColorMapping(
+  theme: EmotionTheme
+): Map<string, Partial<StyledMaterialIconProps>> {
   const { red, orange, green, blue, violet, gray, primary } =
     getMarkdownTextColors(theme)
 
