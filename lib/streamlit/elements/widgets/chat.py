@@ -52,8 +52,12 @@ from streamlit.proto.Block_pb2 import Block as BlockProto
 from streamlit.proto.ChatInput_pb2 import ChatInput as ChatInputProto
 from streamlit.proto.Common_pb2 import ChatInputValue as ChatInputValueProto
 from streamlit.proto.Common_pb2 import FileUploaderState as FileUploaderStateProto
+from streamlit.proto.Common_pb2 import UploadedFileInfo as UploadedFileInfoProto
 from streamlit.proto.RootContainer_pb2 import RootContainer
 from streamlit.proto.WidthConfig_pb2 import WidthConfig
+from streamlit.runtime.memory_uploaded_file_manager import (
+    MemoryUploadedFileManager,
+)
 from streamlit.runtime.metrics_util import gather_metrics
 from streamlit.runtime.scriptrunner_utils.script_run_context import get_script_run_ctx
 from streamlit.runtime.state import (
@@ -70,10 +74,43 @@ if TYPE_CHECKING:
     from streamlit.delta_generator import DeltaGenerator
 
 
+# Audio file validation constants
+_ACCEPTED_AUDIO_EXTENSION: str = ".wav"
+_ACCEPTED_AUDIO_MIME_TYPES: frozenset[str] = frozenset(
+    {
+        "audio/wav",
+        "audio/wave",
+        "audio/x-wav",
+    }
+)
+
+
 @dataclass
 class ChatInputValue(MutableMapping[str, Any]):
+    """Represents the value returned by `st.chat_input` after user interaction.
+
+    This dataclass contains the user's input text, any files uploaded, and optionally
+    an audio recording. It provides a dict-like interface for accessing and modifying
+    its attributes.
+
+    Attributes
+    ----------
+    text : str
+        The text input provided by the user.
+    files : list[UploadedFile]
+        A list of files uploaded by the user.
+    audio : UploadedFile or None, optional
+        An audio recording uploaded by the user, if any.
+
+    Notes
+    -----
+    - Supports dict-like access via `__getitem__`, `__setitem__`, and `__delitem__`.
+    - Use `to_dict()` to convert the value to a standard dictionary.
+    """
+
     text: str
     files: list[UploadedFile]
+    audio: UploadedFile | None = None
 
     def __len__(self) -> int:
         return len(vars(self))
@@ -81,7 +118,7 @@ class ChatInputValue(MutableMapping[str, Any]):
     def __iter__(self) -> Iterator[str]:
         return iter(vars(self))
 
-    def __getitem__(self, item: str) -> str | list[UploadedFile]:
+    def __getitem__(self, item: str) -> str | list[UploadedFile] | UploadedFile | None:
         try:
             return getattr(self, item)  # type: ignore[no-any-return]
         except AttributeError:
@@ -96,7 +133,7 @@ class ChatInputValue(MutableMapping[str, Any]):
         except AttributeError:
             raise KeyError(f"Invalid key: {key}") from None
 
-    def to_dict(self) -> dict[str, str | list[UploadedFile]]:
+    def to_dict(self) -> dict[str, str | list[UploadedFile] | UploadedFile | None]:
         return vars(self)
 
 
@@ -188,13 +225,86 @@ def _pop_upload_files(
             uploaded_file = UploadedFile(maybe_file_rec, f.file_urls)
             collected_files.append(uploaded_file)
 
-            if hasattr(ctx.uploaded_file_mgr, "remove_file"):
+            # Remove file from manager after creating UploadedFile object.
+            # Only MemoryUploadedFileManager implements remove_file.
+            # This explicit type check ensures we only use this cleanup logic
+            # with manager types we've explicitly approved.
+            if isinstance(ctx.uploaded_file_mgr, MemoryUploadedFileManager):
                 ctx.uploaded_file_mgr.remove_file(
                     session_id=ctx.session_id,
                     file_id=f.file_id,
                 )
 
     return collected_files
+
+
+def _pop_audio_file(
+    audio_file_info: UploadedFileInfoProto | None,
+) -> UploadedFile | None:
+    """Extract and return a single audio file from the protobuf message.
+
+    Similar to _pop_upload_files but handles a single audio file instead of a list.
+    Validates that the uploaded file is a WAV file.
+
+    Parameters
+    ----------
+    audio_file_info : UploadedFileInfoProto or None
+        The protobuf message containing information about the uploaded audio file.
+
+    Returns
+    -------
+    UploadedFile or None
+        The extracted audio file if available, None otherwise.
+
+    Raises
+    ------
+    StreamlitAPIException
+        If the uploaded audio file does not have a `.wav` extension or its MIME type is not
+        one of the accepted WAV types (`audio/wav`, `audio/wave`, `audio/x-wav`).
+    """
+    if audio_file_info is None:
+        return None
+
+    ctx = get_script_run_ctx()
+    if ctx is None:
+        return None
+
+    file_recs_list = ctx.uploaded_file_mgr.get_files(
+        session_id=ctx.session_id,
+        file_ids=[audio_file_info.file_id],
+    )
+
+    if len(file_recs_list) == 0:
+        return None
+
+    file_rec = file_recs_list[0]
+    uploaded_file = UploadedFile(file_rec, audio_file_info.file_urls)
+
+    # Validate that the file is a WAV file by checking extension and MIME type
+    if not uploaded_file.name.lower().endswith(_ACCEPTED_AUDIO_EXTENSION):
+        raise StreamlitAPIException(
+            f"Invalid file extension for audio input: `{uploaded_file.name}`. "
+            f"Only WAV files ({_ACCEPTED_AUDIO_EXTENSION}) are accepted."
+        )
+
+    # Validate MIME type (browsers may send different variations of WAV MIME types)
+    if uploaded_file.type not in _ACCEPTED_AUDIO_MIME_TYPES:
+        raise StreamlitAPIException(
+            f"Invalid MIME type for audio input: `{uploaded_file.type}`. "
+            f"Expected one of {_ACCEPTED_AUDIO_MIME_TYPES}."
+        )
+
+    # Remove the file from the manager after creating the UploadedFile object.
+    # Only MemoryUploadedFileManager implements remove_file (not part of the
+    # UploadedFileManager Protocol). This explicit type check ensures we only
+    # use this cleanup logic with manager types we've explicitly approved.
+    if audio_file_info and isinstance(ctx.uploaded_file_mgr, MemoryUploadedFileManager):
+        ctx.uploaded_file_mgr.remove_file(
+            session_id=ctx.session_id,
+            file_id=audio_file_info.file_id,
+        )
+
+    return uploaded_file
 
 
 @dataclass
@@ -214,9 +324,15 @@ class ChatInputSerde:
             if self.allowed_types and not isinstance(file, DeletedFile):
                 enforce_filename_restriction(file.name, self.allowed_types)
 
+        # Extract audio file separately from the audio_file_info field
+        audio_file = _pop_audio_file(
+            ui_value.audio_file_info if ui_value.HasField("audio_file_info") else None
+        )
+
         return ChatInputValue(
             text=ui_value.data,
             files=uploaded_files,
+            audio=audio_file,
         )
 
     def serialize(self, v: str | None) -> ChatInputValueProto:
