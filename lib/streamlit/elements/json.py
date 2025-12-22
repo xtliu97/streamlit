@@ -27,10 +27,12 @@ from streamlit.elements.lib.layout_utils import (
 from streamlit.proto.Json_pb2 import Json as JsonProto
 from streamlit.runtime.metrics_util import gather_metrics
 from streamlit.type_util import (
+    dump_pydantic_sequence,
     is_custom_dict,
     is_list_like,
     is_namedtuple,
     is_pydantic_model,
+    is_sequence_of_pydantic_models,
 )
 
 if TYPE_CHECKING:
@@ -120,7 +122,14 @@ class JsonMixin:
             body = dict(body)  # type: ignore
 
         if is_list_like(body):
-            body = list(body)  # ty: ignore[invalid-argument-type]
+            if is_sequence_of_pydantic_models(body):
+                try:
+                    body = dump_pydantic_sequence(body)
+                except AttributeError:
+                    # Fallback to list(body) if it contains non-Pydantic models:
+                    body = list(body)  # ty: ignore[invalid-argument-type]
+            else:
+                body = list(body)  # ty: ignore[invalid-argument-type]
 
         if not isinstance(body, str):
             try:
