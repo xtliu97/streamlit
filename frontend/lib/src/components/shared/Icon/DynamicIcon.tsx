@@ -171,6 +171,7 @@ export const DynamicIcon = (props: DynamicIconProps): React.ReactElement => {
   const colorMapping = createColorMapping(theme)
   const colorStyle = parsedColor ? colorMapping.get(parsedColor) : {}
 
+  // Merge props: colorStyle from parsed icon overrides props.color if present
   const mergedProps = {
     ...props,
     ...colorStyle,
