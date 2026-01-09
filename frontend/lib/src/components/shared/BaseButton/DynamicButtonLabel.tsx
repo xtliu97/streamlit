@@ -49,17 +49,11 @@ export const DynamicButtonLabel = ({
     return formatShortcutForDisplay(shortcut, { isMac: isFromMac() })
   }, [shortcut])
 
-  const isMaterialIcon = icon?.match(
-    /:.*\[:material\/[^:\]]+:\]|^:material\/[^:\]]+:/
-  )
-  // Material icons need to be larger to render similar size of emojis
-  const dynamicIconSize = iconSize ?? (isMaterialIcon ? "lg" : "base")
-
   return (
     <StyledButtonLabel>
       <StyledButtonMainLabel data-has-shortcut={Boolean(displayShortcut)}>
         {icon && iconPosition === "left" && (
-          <DynamicIcon size={dynamicIconSize} iconValue={icon} />
+          <DynamicIcon size={iconSize ?? "lg"} iconValue={icon} />
         )}
         {label && (
           <StreamlitMarkdown
@@ -71,7 +65,7 @@ export const DynamicButtonLabel = ({
           />
         )}
         {icon && iconPosition === "right" && (
-          <DynamicIcon size={dynamicIconSize} iconValue={icon} />
+          <DynamicIcon size={iconSize ?? "lg"} iconValue={icon} />
         )}
         {displayShortcut && (
           <StyledButtonShortcut aria-label={`Shortcut ${displayShortcut}`}>
