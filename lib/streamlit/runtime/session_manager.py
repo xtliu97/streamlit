@@ -1,4 +1,4 @@
-# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,13 +16,16 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Callable, Protocol, cast
+from typing import TYPE_CHECKING, Protocol, cast
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from streamlit.proto.ForwardMsg_pb2 import ForwardMsg
     from streamlit.runtime.app_session import AppSession
     from streamlit.runtime.script_data import ScriptData
     from streamlit.runtime.scriptrunner.script_cache import ScriptCache
+    from streamlit.runtime.scriptrunner_utils.script_run_context import UserInfoType
     from streamlit.runtime.uploaded_file_manager import UploadedFileManager
 
 
@@ -153,7 +156,7 @@ class SessionStorage(Protocol):
         raise NotImplementedError
 
     @abstractmethod
-    def list(self) -> list[SessionInfo]:
+    def list(self) -> list[SessionInfo]:  # ty: ignore[invalid-type-form]
         """List all sessions tracked by this SessionStorage.
 
         Returns
@@ -236,7 +239,7 @@ class SessionManager(Protocol):
         self,
         client: SessionClient,
         script_data: ScriptData,
-        user_info: dict[str, str | bool | None],
+        user_info: UserInfoType,
         existing_session_id: str | None = None,
         session_id_override: str | None = None,
     ) -> str:

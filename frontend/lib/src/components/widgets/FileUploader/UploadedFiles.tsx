@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,28 +14,37 @@
  * limitations under the License.
  */
 
-import React, { memo, ReactElement } from "react"
+import { memo, ReactElement } from "react"
 
-import withPagination, { PaginationProps } from "./withPagination"
-import UploadedFile from "./UploadedFile"
 import {
   StyledUploadedFiles,
   StyledUploadedFilesList,
   StyledUploadedFilesListItem,
 } from "./styled-components"
+import UploadedFile from "./UploadedFile"
 import { UploadFileInfo } from "./UploadFileInfo"
+import withPagination, { PaginationProps } from "./withPagination"
 
 export interface Props {
   items: UploadFileInfo[]
   onDelete: (id: number) => void
+  disabled: boolean
 }
 
-const UploadedFileList = ({ items, onDelete }: Props): ReactElement => {
+const UploadedFileList = ({
+  items,
+  onDelete,
+  disabled,
+}: Props): ReactElement => {
   return (
     <StyledUploadedFilesList>
       {items.map(file => (
         <StyledUploadedFilesListItem key={file.id}>
-          <UploadedFile fileInfo={file} onDelete={onDelete} />
+          <UploadedFile
+            fileInfo={file}
+            onDelete={onDelete}
+            disabled={disabled}
+          />
         </StyledUploadedFilesListItem>
       ))}
     </StyledUploadedFilesList>

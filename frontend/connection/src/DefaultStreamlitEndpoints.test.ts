@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,32 @@
  * limitations under the License.
  */
 
+// Mock StreamlitConfig using global mock state (see vitest.setup.ts)
+vi.mock("@streamlit/utils", async () => {
+  const actual = await vi.importActual("@streamlit/utils")
+  return {
+    ...actual,
+    get StreamlitConfig() {
+      return globalThis.__mockStreamlitConfig
+    },
+  }
+})
+
 import axios, { AxiosHeaders } from "axios"
 import MockAdapter from "axios-mock-adapter"
 
 import { buildHttpUri } from "@streamlit/utils"
 
 import { DefaultStreamlitEndpoints } from "./DefaultStreamlitEndpoints"
+
+// Mock the dynamic import to return the same axios instance we're using for testing
+vi.mock("axios", async importOriginal => {
+  const actual = await importOriginal<typeof import("axios")>()
+  return {
+    ...actual,
+    default: actual.default,
+  }
+})
 
 const MOCK_SERVER_URI = {
   protocol: "http:",
@@ -116,6 +136,39 @@ describe("DefaultStreamlitEndpoints", () => {
     it("passes through other media uris", () => {
       const uri = endpoints.buildMediaURL("http://example/blah.png")
       expect(uri).toBe("http://example/blah.png")
+    })
+  })
+
+  describe("buildDownloadUrl", () => {
+    const endpoints = new DefaultStreamlitEndpoints({
+      getServerUri: () => MOCK_SERVER_URI,
+      csrfEnabled: false,
+      sendClientError: vi.fn(),
+    })
+
+    beforeEach(() => {
+      globalThis.__mockStreamlitConfig = {}
+    })
+
+    it("builds URL correctly for streamlit-served media when DOWNLOAD_ASSETS_BASE_URL is not set", () => {
+      const url = endpoints.buildDownloadUrl("/media/1234567890.pdf")
+      expect(url).toBe(
+        "http://streamlit.mock:80/mock/base/path/media/1234567890.pdf"
+      )
+    })
+
+    it("builds URL correctly when DOWNLOAD_ASSETS_BASE_URL is set", () => {
+      globalThis.__mockStreamlitConfig.DOWNLOAD_ASSETS_BASE_URL =
+        "https://downloads.example.com/assets"
+      const url = endpoints.buildDownloadUrl("/media/1234567890.pdf")
+      expect(url).toBe(
+        "https://downloads.example.com/assets/media/1234567890.pdf"
+      )
+    })
+
+    it("passes through non-media URLs unchanged", () => {
+      const url = endpoints.buildDownloadUrl("https://example.com/file.pdf")
+      expect(url).toBe("https://example.com/file.pdf")
     })
   })
 
@@ -221,7 +274,7 @@ describe("DefaultStreamlitEndpoints", () => {
         .reply(() => [200, 1])
 
       const mockOnUploadProgress = vi.fn()
-      const mockCancelToken = axios.CancelToken.source().token
+      const mockAbortController = new AbortController()
 
       await expect(
         endpoints.uploadFileUploaderFile(
@@ -229,7 +282,7 @@ describe("DefaultStreamlitEndpoints", () => {
           MOCK_FILE,
           "mockSessionId",
           mockOnUploadProgress,
-          mockCancelToken
+          mockAbortController.signal
         )
       ).resolves.toBeUndefined()
 
@@ -246,7 +299,7 @@ describe("DefaultStreamlitEndpoints", () => {
       // expect(actualRequestConfig.method?.toUpperCase()).toBe("PUT");
       expect(actualRequestConfig.responseType).toBe("text")
       expect(actualRequestConfig.data).toEqual(expectedData)
-      expect(actualRequestConfig.cancelToken).toBe(mockCancelToken)
+      expect(actualRequestConfig.signal).toBe(mockAbortController.signal)
       expect(actualRequestConfig.onUploadProgress).toBe(mockOnUploadProgress)
     })
 
@@ -256,7 +309,7 @@ describe("DefaultStreamlitEndpoints", () => {
         .reply(() => [200, 1])
 
       const mockOnUploadProgress = vi.fn()
-      const mockCancelToken = axios.CancelToken.source().token
+      const mockAbortController = new AbortController()
 
       await expect(
         endpoints.uploadFileUploaderFile(
@@ -264,7 +317,7 @@ describe("DefaultStreamlitEndpoints", () => {
           MOCK_FILE,
           "mockSessionId",
           mockOnUploadProgress,
-          mockCancelToken
+          mockAbortController.signal
         )
       ).resolves.toBeUndefined()
 
@@ -279,7 +332,7 @@ describe("DefaultStreamlitEndpoints", () => {
       )
       expect(actualRequestConfig.responseType).toBe("text")
       expect(actualRequestConfig.data).toEqual(expectedData)
-      expect(actualRequestConfig.cancelToken).toBe(mockCancelToken)
+      expect(actualRequestConfig.signal).toBe(mockAbortController.signal)
       expect(actualRequestConfig.onUploadProgress).toBe(mockOnUploadProgress)
     })
 
@@ -289,7 +342,7 @@ describe("DefaultStreamlitEndpoints", () => {
         .reply(() => [200, 1])
 
       const mockOnUploadProgress = vi.fn()
-      const mockCancelToken = axios.CancelToken.source().token
+      const mockAbortController = new AbortController()
 
       endpoints.setFileUploadClientConfig({
         prefix: "http://example.com/someprefix/",
@@ -305,7 +358,7 @@ describe("DefaultStreamlitEndpoints", () => {
           MOCK_FILE,
           "mockSessionId",
           mockOnUploadProgress,
-          mockCancelToken
+          mockAbortController.signal
         )
       ).resolves.toBeUndefined()
 
@@ -328,7 +381,7 @@ describe("DefaultStreamlitEndpoints", () => {
           header2: "header2value",
         })
       )
-      expect(actualRequestConfig.cancelToken).toBe(mockCancelToken)
+      expect(actualRequestConfig.signal).toBe(mockAbortController.signal)
       expect(actualRequestConfig.onUploadProgress).toBe(mockOnUploadProgress)
     })
 
@@ -468,19 +521,25 @@ describe("DefaultStreamlitEndpoints", () => {
   // Test our private csrfRequest() API, which is responsible for setting
   // the "X-Xsrftoken" header.
   describe("csrfRequest()", () => {
-    const spyRequest = vi.spyOn(axios, "request")
     let prevDocumentCookie: string
+    let mockRequest: ReturnType<typeof vi.fn<typeof axios.request>>
 
     beforeEach(() => {
       prevDocumentCookie = document.cookie
       document.cookie = "_streamlit_xsrf=mockXsrfCookie;"
+      // Create a mock for axios.request that will be used by the dynamic import
+      mockRequest = vi
+        .fn<typeof axios.request>()
+        .mockResolvedValue({ data: {} } as never)
+      vi.spyOn(axios, "request").mockImplementation(mockRequest)
     })
 
     afterEach(() => {
       document.cookie = prevDocumentCookie
+      vi.restoreAllMocks()
     })
 
-    it("sets token when csrfEnabled: true", () => {
+    it("sets token when csrfEnabled: true", async () => {
       const endpoints = new DefaultStreamlitEndpoints({
         getServerUri: () => MOCK_SERVER_URI,
         csrfEnabled: true,
@@ -489,16 +548,16 @@ describe("DefaultStreamlitEndpoints", () => {
 
       const url = buildHttpUri(MOCK_SERVER_URI, "mockUrl")
       // @ts-expect-error
-      void endpoints.csrfRequest(url, {})
+      await endpoints.csrfRequest(url, {})
 
-      expect(spyRequest).toHaveBeenCalledWith({
+      expect(mockRequest).toHaveBeenCalledWith({
         headers: { "X-Xsrftoken": "mockXsrfCookie" },
         withCredentials: true,
         url,
       })
     })
 
-    it("omits token when csrfEnabled: false", () => {
+    it("omits token when csrfEnabled: false", async () => {
       const endpoints = new DefaultStreamlitEndpoints({
         getServerUri: () => MOCK_SERVER_URI,
         csrfEnabled: false,
@@ -507,9 +566,9 @@ describe("DefaultStreamlitEndpoints", () => {
 
       const url = buildHttpUri(MOCK_SERVER_URI, "mockUrl")
       // @ts-expect-error
-      void endpoints.csrfRequest(url, {})
+      await endpoints.csrfRequest(url, {})
 
-      expect(spyRequest).toHaveBeenCalledWith({
+      expect(mockRequest).toHaveBeenCalledWith({
         url,
       })
     })
@@ -518,7 +577,7 @@ describe("DefaultStreamlitEndpoints", () => {
   describe("checkSourceUrlResponse", () => {
     it("sends error to host if error on response", async () => {
       // Mock fetch for checkSourceUrlResponse - response is not ok
-      global.fetch = vi.fn(() =>
+      globalThis.fetch = vi.fn(() =>
         Promise.resolve({
           ok: false,
           status: 404,
@@ -561,7 +620,7 @@ describe("DefaultStreamlitEndpoints", () => {
       })
 
       // Mock fetch for checkSourceUrlResponse - fetch fails
-      global.fetch = vi.fn(() => Promise.reject(new Error("mockError")))
+      globalThis.fetch = vi.fn(() => Promise.reject(new Error("mockError")))
 
       const sendClientErrorToHostSpy = vi.spyOn(
         endpoints,

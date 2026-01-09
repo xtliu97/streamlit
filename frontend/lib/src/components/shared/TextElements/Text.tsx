@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,13 +22,22 @@ export enum Kind {
 
 interface TextProps {
   kind?: Kind
+  disabled?: boolean
 }
 
-export const Small = styled.small<TextProps>(({ kind, theme }) => {
-  const { danger, fadedText60 } = theme.colors
+export const Small = styled.small<TextProps>(({ kind, disabled, theme }) => {
+  const { redTextColor, fadedText60, fadedText40 } = theme.colors
+
+  let color = fadedText60
+  if (disabled) {
+    color = fadedText40
+  }
+  if (kind === Kind.DANGER) {
+    color = redTextColor
+  }
 
   return {
-    color: kind === Kind.DANGER ? danger : fadedText60,
+    color,
     fontSize: theme.fontSizes.sm,
     lineHeight: theme.lineHeights.tight,
   }

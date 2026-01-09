@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-import { Mock, Mocked } from "vitest"
-import { View as VegaView } from "vega"
 import { act, renderHook } from "@testing-library/react"
+import { View as VegaView } from "vega"
+import { Mock, Mocked } from "vitest"
 
-import { WidgetStateManager } from "~lib/WidgetStateManager"
 import { debounce } from "~lib/util/utils"
+import { WidgetStateManager } from "~lib/WidgetStateManager"
 
-import { useVegaLiteSelections } from "./useVegaLiteSelections"
 import { VegaLiteChartElement } from "./arrowUtils"
+import { useVegaLiteSelections } from "./useVegaLiteSelections"
 
 // Mock the debounce so we can control how/when it is invoked.
 vi.mock("~lib/util/utils", async () => ({

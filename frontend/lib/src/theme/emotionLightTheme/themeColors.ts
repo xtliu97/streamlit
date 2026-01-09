@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,8 @@
  * limitations under the License.
  */
 
-import { transparentize } from "color2k"
-
 import { colors } from "~lib/theme/primitives/colors"
 
 export default {
   ...colors,
-  // For this one, we use a specific color,
-  // outside our standard color palette,
-  // to ensure contrast is good enough for accessibility
-  warning: "#926C05",
-  warningBg: transparentize(colors.yellow70, 0.9),
-  successBg: transparentize(colors.green70, 0.9),
-  danger: colors.red100,
-  dangerBg: transparentize(colors.red80, 0.91),
 }

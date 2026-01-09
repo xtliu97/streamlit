@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-import React, { ReactElement } from "react"
+import { ReactElement } from "react"
 
+import { mergeOverrides } from "baseui"
+import { Overrides } from "baseui/overrides"
 import {
   type ProgressBarOverrides,
   ProgressBar as UIProgressBar,
 } from "baseui/progress-bar"
-import { mergeOverrides } from "baseui"
-import { Overrides } from "baseui/overrides"
 
 import { useEmotionTheme } from "~lib/hooks/useEmotionTheme"
 

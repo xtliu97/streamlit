@@ -1,4 +1,4 @@
-# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -214,7 +214,7 @@ class HashTest(unittest.TestCase):
         try:
             get_hash(Mock())
             get_hash(MagicMock())
-        except BaseException:
+        except Exception:
             self.fail("get_hash raised an exception")
 
     def test_list(self):
@@ -434,7 +434,7 @@ class HashTest(unittest.TestCase):
 
     @pytest.mark.require_integration
     def test_polars_series(self):
-        import polars as pl  # type: ignore[import-not-found]
+        import polars as pl
 
         series1 = pl.Series([1, 2])
         series2 = pl.Series([1, 3])
@@ -528,6 +528,34 @@ class HashTest(unittest.TestCase):
 
         assert get_hash(im4) == get_hash(im5)
         assert get_hash(im5) != get_hash(im6)
+
+    @pytest.mark.require_integration
+    def test_pydantic_model(self):
+        """Test that Pydantic models are properly hashed.
+
+        Verifies that:
+        - The same model instance hashes consistently
+        - Two identical model instances produce the same hash
+        - Models with different field values produce different hashes
+        - Different model classes with the same field values produce different hashes
+        """
+        import pydantic
+
+        class Foo(pydantic.BaseModel):
+            name: str
+
+        class Bar(pydantic.BaseModel):
+            name: str
+
+        m1 = Foo(name="fake_name1")
+        m1_again = Foo(name="fake_name1")
+        m2 = Foo(name="fake_name2")
+        m3 = Bar(name="fake_name1")
+
+        assert get_hash(m1) == get_hash(m1)
+        assert get_hash(m1) == get_hash(m1_again)
+        assert get_hash(m1) != get_hash(m2)
+        assert get_hash(m1) != get_hash(m3)
 
     @parameterized.expand(
         [

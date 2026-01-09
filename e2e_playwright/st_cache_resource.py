@@ -1,4 +1,4 @@
-# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -40,13 +40,7 @@ def nested_cached_function():
 
 if st.button("Run nested cached function with widget warning"):
     # When running nested_cached_function(), we get two warnings, one from
-    # nested_cached_function() and one from inner_cache_function. inner_cache_function()
-    # on its own would allow the widget usage, but since it is nested in the other
-    # function that does not allow it, we don't allow it.
-    # The outer experimental_allow_widgets=False will always take priority.
-    # Otherwise, we would need to recompute the outer cached function whenever
-    # the widget in the inner function is used. Which we don't want to do when
-    # experimental_allow_widgets is set to False.
+    # nested_cached_function() and one from inner_cache_function.
     nested_cached_function()
 
 if "run_counter" not in st.session_state:

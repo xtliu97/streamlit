@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,28 @@
  * limitations under the License.
  */
 
+import isPropValid from "@emotion/is-prop-valid"
 import styled from "@emotion/styled"
+import { StyledDropdownListItem } from "baseui/select"
 
 export const StyledClearIconContainer = styled.div({
   position: "absolute",
   top: "50%",
   right: "2.05em",
+})
+
+export const StyledTimeDropdownListItem = styled(StyledDropdownListItem, {
+  shouldForwardProp: isPropValid,
+})(({ theme, $isHighlighted }) => {
+  return {
+    paddingRight: theme.spacing.lg,
+    paddingLeft: theme.spacing.lg,
+    paddingTop: theme.spacing.sm,
+    paddingBottom: theme.spacing.sm,
+    background: $isHighlighted ? theme.colors.darkenedBgMix15 : undefined,
+
+    "&:hover, &:active, &:focus-visible": {
+      background: theme.colors.darkenedBgMix15,
+    },
+  }
 })

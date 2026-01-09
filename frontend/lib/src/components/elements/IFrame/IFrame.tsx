@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,15 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import React, { memo, ReactElement } from "react"
+import { memo, ReactElement } from "react"
 
 import { IFrame as IFrameProto } from "@streamlit/protobuf"
 
-import { isNullOrUndefined, notNullOrUndefined } from "~lib/util/utils"
 import {
   DEFAULT_IFRAME_FEATURE_POLICY,
   DEFAULT_IFRAME_SANDBOX_POLICY,
 } from "~lib/util/IFrameUtil"
+import { isNullOrUndefined, notNullOrUndefined } from "~lib/util/utils"
 
 import { StyledIframe } from "./styled-components"
 
@@ -55,7 +55,6 @@ function IFrame({ element }: Readonly<IFrameProps>): ReactElement {
       disableScrolling={!element.scrolling}
       src={src}
       srcDoc={srcDoc}
-      height={element.height}
       scrolling={element.scrolling ? "auto" : "no"}
       sandbox={DEFAULT_IFRAME_SANDBOX_POLICY}
       title="st.iframe"

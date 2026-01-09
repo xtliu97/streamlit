@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,26 @@
  * limitations under the License.
  */
 
-import React from "react"
-
 import { fireEvent, screen } from "@testing-library/react"
 
 import { Audio as AudioProto } from "@streamlit/protobuf"
 
-import { render } from "~lib/test_util"
 import { mockEndpoints } from "~lib/mocks/mocks"
+import { render, renderWithContexts } from "~lib/test_util"
 import { WidgetStateManager as ElementStateManager } from "~lib/WidgetStateManager"
 
 import Audio, { AudioProps } from "./Audio"
+
+// Mock StreamlitConfig using global mock state (see vitest.setup.ts)
+vi.mock("@streamlit/utils", async () => {
+  const actual = await vi.importActual("@streamlit/utils")
+  return {
+    ...actual,
+    get StreamlitConfig() {
+      return globalThis.__mockStreamlitConfig
+    },
+  }
+})
 
 describe("Audio Element", () => {
   const buildMediaURL = vi.fn().mockReturnValue("https://mock.media.url")
@@ -144,5 +153,116 @@ describe("Audio Element", () => {
       "onerror triggered",
       "https://mock.media.url/"
     )
+  })
+
+  describe("crossOrigin attribute", () => {
+    it.each([
+      { resourceCrossOriginMode: "anonymous" },
+      { resourceCrossOriginMode: "use-credentials" },
+      { resourceCrossOriginMode: undefined },
+    ] as const)(
+      "don't set crossOrigin attribute when StreamlitConfig.BACKEND_BASE_URL is not set",
+      ({ resourceCrossOriginMode }) => {
+        const props = getProps()
+        renderWithContexts(<Audio {...props} />, {
+          libConfigContext: {
+            resourceCrossOriginMode,
+          },
+        })
+        const audioElement = screen.getByTestId("stAudio")
+        expect(audioElement).not.toHaveAttribute("crossOrigin")
+      }
+    )
+
+    describe("with BACKEND_BASE_URL set", () => {
+      beforeEach(() => {
+        globalThis.__mockStreamlitConfig.BACKEND_BASE_URL =
+          "https://backend.example.com:8080/app"
+      })
+
+      afterEach(() => {
+        globalThis.__mockStreamlitConfig = {}
+      })
+
+      it.each([
+        {
+          expected: "anonymous",
+          resourceCrossOriginMode: "anonymous" as const,
+          url: "/media/audio.wav",
+          scenario: "relative URL with anonymous mode",
+        },
+        {
+          expected: "use-credentials",
+          resourceCrossOriginMode: "use-credentials" as const,
+          url: "/media/audio.wav",
+          scenario: "relative URL with use-credentials mode",
+        },
+        {
+          expected: "anonymous",
+          resourceCrossOriginMode: "anonymous" as const,
+          url: "https://backend.example.com:8080/media/audio.wav",
+          scenario: "same origin as BACKEND_BASE_URL with anonymous mode",
+        },
+        {
+          expected: "use-credentials",
+          resourceCrossOriginMode: "use-credentials" as const,
+          url: "https://backend.example.com:8080/media/audio.wav",
+          scenario:
+            "same origin as BACKEND_BASE_URL with use-credentials mode",
+        },
+      ])(
+        "sets crossOrigin to $expected when $scenario",
+        ({ expected, resourceCrossOriginMode, url }) => {
+          const props = getProps({ url })
+          renderWithContexts(<Audio {...props} />, {
+            libConfigContext: {
+              resourceCrossOriginMode,
+            },
+          })
+          const audioElement = screen.getByTestId("stAudio")
+          expect(audioElement).toHaveAttribute("crossOrigin", expected)
+        }
+      )
+
+      it.each([
+        {
+          resourceCrossOriginMode: undefined,
+          url: "/media/audio.wav",
+          scenario: "relative URL with undefined mode",
+        },
+        {
+          resourceCrossOriginMode: undefined,
+          url: "https://backend.example.com:8080/media/audio.wav",
+          scenario: "same origin as BACKEND_BASE_URL with undefined mode",
+        },
+        {
+          resourceCrossOriginMode: "anonymous" as const,
+          url: "https://external.example.com/media/audio.wav",
+          scenario: "different hostname than BACKEND_BASE_URL",
+        },
+        {
+          resourceCrossOriginMode: "anonymous" as const,
+          url: "https://backend.example.com:9000/media/audio.wav",
+          scenario: "different port than BACKEND_BASE_URL",
+        },
+        {
+          resourceCrossOriginMode: "anonymous" as const,
+          url: "http://backend.example.com:8080/media/audio.wav",
+          scenario: "different protocol than BACKEND_BASE_URL",
+        },
+      ])(
+        "does not set crossOrigin when $scenario",
+        ({ resourceCrossOriginMode, url }) => {
+          const props = getProps({ url })
+          renderWithContexts(<Audio {...props} />, {
+            libConfigContext: {
+              resourceCrossOriginMode,
+            },
+          })
+          const audioElement = screen.getByTestId("stAudio")
+          expect(audioElement).not.toHaveAttribute("crossOrigin")
+        }
+      )
+    })
   })
 })

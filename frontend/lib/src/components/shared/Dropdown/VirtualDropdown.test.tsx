@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-import React, { ReactElement } from "react"
+import { ReactElement } from "react"
 
 import { screen } from "@testing-library/react"
 
+import { mockConvertRemToPx } from "~lib/mocks/mocks"
 import { render } from "~lib/test_util"
 import * as Utils from "~lib/theme/utils"
-import { mockConvertRemToPx } from "~lib/mocks/mocks"
 
 import VirtualDropdown from "./VirtualDropdown"
 

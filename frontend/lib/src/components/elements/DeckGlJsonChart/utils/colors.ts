@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import * as layers from "@deck.gl/layers"
 import * as geoLayers from "@deck.gl/geo-layers"
+import * as layers from "@deck.gl/layers"
 import * as meshLayers from "@deck.gl/mesh-layers"
 
 import { jsonConverter } from "./jsonConverter"
@@ -31,7 +31,7 @@ import { jsonConverter } from "./jsonConverter"
  * Note that this mapping is not exhaustive and only includes the layers that we
  * can actually change the color of.
  */
-export const LAYER_TYPE_TO_FILL_FUNCTION = {
+export const LAYER_TYPE_TO_FILL_FUNCTION: Record<string, readonly string[]> = {
   [geoLayers.GeohashLayer.layerName]: ["getFillColor"],
   [geoLayers.H3ClusterLayer.layerName]: ["getFillColor"],
   [geoLayers.H3HexagonLayer.layerName]: ["getFillColor"],

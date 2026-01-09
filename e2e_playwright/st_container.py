@@ -1,4 +1,4 @@
-# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ with st.container(border=True, key="container_with_border_and_text"):
         "This is inside a container with a border. And it doesn't overflow "
         "the borders if the text requires multiple lines."
     )
-    st.button("Stretch full width", use_container_width=True)
+    st.button("Stretch full width", width="stretch")
 
 with st.container(height=200, key="container_with_scroll_container"):
     st.markdown("This is inside a scrolling container.")
@@ -92,6 +92,10 @@ with st.container(width=200, border=True, key="container_with_fixed_width"):
 
 with st.container(width="stretch", border=True, key="container_with_stretch_width"):
     st.write("stretch width container")
+    st.code(code)
+
+with st.container(width="content", border=True, key="container_with_content_width"):
+    st.write("content width container")
     st.code(code)
 
 with st.container(

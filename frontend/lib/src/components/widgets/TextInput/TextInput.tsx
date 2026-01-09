@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,32 +14,31 @@
  * limitations under the License.
  */
 
-import React, { memo, ReactElement, useCallback, useState } from "react"
+import { memo, ReactElement, useCallback, useState } from "react"
 
-import uniqueId from "lodash/uniqueId"
 import { Input as UIInput } from "baseui/input"
+import { uniqueId } from "lodash-es"
 
 import { TextInput as TextInputProto } from "@streamlit/protobuf"
 
-import useOnInputChange from "~lib/hooks/useOnInputChange"
-import { WidgetStateManager } from "~lib/WidgetStateManager"
+import { getBorderColor } from "~lib/components/shared/Base/styled-components"
+import { DynamicIcon, isMaterialIcon } from "~lib/components/shared/Icon"
+import InputInstructions from "~lib/components/shared/InputInstructions/InputInstructions"
+import {
+  WidgetLabel,
+  WidgetLabelHelpIcon,
+} from "~lib/components/widgets/BaseWidget"
 import {
   useBasicWidgetState,
   ValueWithSource,
 } from "~lib/hooks/useBasicWidgetState"
-import useUpdateUiValue from "~lib/hooks/useUpdateUiValue"
-import useSubmitFormViaEnterKey from "~lib/hooks/useSubmitFormViaEnterKey"
-import InputInstructions from "~lib/components/shared/InputInstructions/InputInstructions"
-import {
-  StyledWidgetLabelHelp,
-  WidgetLabel,
-} from "~lib/components/widgets/BaseWidget"
-import { DynamicIcon } from "~lib/components/shared/Icon"
-import TooltipIcon from "~lib/components/shared/TooltipIcon"
-import { Placement } from "~lib/components/shared/Tooltip"
-import { isInForm, labelVisibilityProtoValueToEnum } from "~lib/util/utils"
-import { useCalculatedWidth } from "~lib/hooks/useCalculatedWidth"
+import { useCalculatedDimensions } from "~lib/hooks/useCalculatedDimensions"
 import { useEmotionTheme } from "~lib/hooks/useEmotionTheme"
+import useOnInputChange from "~lib/hooks/useOnInputChange"
+import useSubmitFormViaEnterKey from "~lib/hooks/useSubmitFormViaEnterKey"
+import useUpdateUiValue from "~lib/hooks/useUpdateUiValue"
+import { isInForm, labelVisibilityProtoValueToEnum } from "~lib/util/utils"
+import { WidgetStateManager } from "~lib/WidgetStateManager"
 
 import { StyledTextInput } from "./styled-components"
 
@@ -64,7 +63,7 @@ function TextInput({
     () => getStateFromWidgetMgr(widgetMgr, element) ?? null
   )
 
-  const [width, elementRef] = useCalculatedWidth()
+  const { width, elementRef } = useCalculatedDimensions()
 
   /**
    * True if the user-specified state.value has not yet been synced to the WidgetStateManager.
@@ -142,11 +141,6 @@ function TextInput({
     fragmentId
   )
 
-  // Material icons need to be larger to render similar size of emojis,
-  // and we change their text color
-  const isMaterialIcon = icon?.startsWith(":material")
-  const dynamicIconSize = isMaterialIcon ? "lg" : "base"
-
   return (
     <StyledTextInput
       className="stTextInput"
@@ -162,12 +156,7 @@ function TextInput({
         htmlFor={id}
       >
         {element.help && (
-          <StyledWidgetLabelHelp>
-            <TooltipIcon
-              content={element.help}
-              placement={Placement.TOP_RIGHT}
-            />
-          </StyledWidgetLabelHelp>
+          <WidgetLabelHelpIcon content={element.help} label={element.label} />
         )}
       </WidgetLabel>
       <UIInput
@@ -187,7 +176,7 @@ function TextInput({
             <DynamicIcon
               data-testid="stTextInputIcon"
               iconValue={icon}
-              size={dynamicIconSize}
+              size="lg"
             />
           )
         }
@@ -215,14 +204,23 @@ function TextInput({
             props: {
               "data-testid": "stTextInputRootElement",
             },
-            style: {
-              height: theme.sizes.minElementHeight,
-              // Baseweb requires long-hand props, short-hand leads to weird bugs & warnings.
-              borderLeftWidth: theme.sizes.borderWidth,
-              borderRightWidth: theme.sizes.borderWidth,
-              borderTopWidth: theme.sizes.borderWidth,
-              borderBottomWidth: theme.sizes.borderWidth,
-              paddingLeft: icon ? theme.spacing.sm : 0,
+            style: ({ $isFocused }: { $isFocused: boolean }) => {
+              const borderColor = getBorderColor(theme.colors, $isFocused)
+              return {
+                height: theme.sizes.minElementHeight,
+                // Baseweb requires long-hand props, short-hand leads to weird bugs & warnings.
+                borderLeftWidth: theme.sizes.borderWidth,
+                borderRightWidth: theme.sizes.borderWidth,
+                borderTopWidth: theme.sizes.borderWidth,
+                borderBottomWidth: theme.sizes.borderWidth,
+
+                borderTopColor: borderColor,
+                borderRightColor: borderColor,
+                borderBottomColor: borderColor,
+                borderLeftColor: borderColor,
+
+                paddingLeft: icon ? theme.spacing.sm : 0,
+              }
             },
           },
           StartEnhancer: {
@@ -232,7 +230,9 @@ function TextInput({
               // Keeps emoji icons from being cut off on the right
               minWidth: theme.iconSizes.lg,
               // Material icons color changed as inactionable
-              color: isMaterialIcon ? theme.colors.fadedText60 : "inherit",
+              color: isMaterialIcon(icon)
+                ? theme.colors.fadedText60
+                : "inherit",
             },
           },
         }}

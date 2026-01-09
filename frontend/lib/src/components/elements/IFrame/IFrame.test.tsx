@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,8 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-import React from "react"
 
 import { screen } from "@testing-library/react"
 
@@ -41,14 +39,6 @@ describe("st.iframe", () => {
     const iframeElement = screen.getByTestId("stIFrame")
     expect(iframeElement).toBeInTheDocument()
     expect(iframeElement).toHaveClass("stIFrame")
-  })
-
-  it("should set iframe height", () => {
-    const props = getProps({
-      height: 400,
-    })
-    render(<IFrame {...props} />)
-    expect(screen.getByTestId("stIFrame")).toHaveAttribute("height", "400")
   })
 
   describe("tabIndex attribute", () => {

@@ -1,5 +1,5 @@
 /**!
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,8 +23,8 @@ message GraphVizChart {
   // A specification of the GraphViz graph in the "Dot" language.
   string spec = 1;
 
-  // If True, will overwrite the chart width spec to fit to container.
-  bool use_container_width = 4;
+  // DEPRECATED: We use widthConfig on Element.proto
+  bool use_container_width = 4 [deprecated = true];
 
   // A unique ID of this element.
   string element_id = 5;

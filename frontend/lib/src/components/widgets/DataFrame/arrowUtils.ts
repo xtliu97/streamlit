@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,11 +22,13 @@ import {
   TextCell,
   UriCell,
 } from "@glideapps/glide-data-grid"
-import { DatePickerType } from "@glideapps/glide-data-grid-cells"
+import {
+  DatePickerType,
+  MultiSelectCellType,
+} from "@glideapps/glide-data-grid-cells"
 import { Field, Null } from "apache-arrow"
 import moment from "moment"
 
-import { DataFrameCell, Quiver } from "~lib/dataframes/Quiver"
 import {
   convertTimeToDate,
   format as formatArrowCell,
@@ -49,6 +51,7 @@ import {
   isTimeType,
 } from "~lib/dataframes/arrowTypeUtils"
 import { StyledCell } from "~lib/dataframes/pandasStylerUtils"
+import { DataFrameCell, Quiver } from "~lib/dataframes/Quiver"
 import { fontSizes } from "~lib/theme/primitives/typography"
 import { isNullOrUndefined, notNullOrUndefined } from "~lib/util/utils"
 
@@ -137,7 +140,11 @@ export function applyPandasStylerCss(
     themeOverride.textDark = fontColor
 
     // Apply text color also for cells that don't use textDark:
-    if (cell.kind === GridCellKind.Bubble) {
+    if (
+      cell.kind === GridCellKind.Bubble ||
+      (cell.kind === GridCellKind.Custom &&
+        (cell as MultiSelectCellType).data?.kind === "multi-select-cell")
+    ) {
       themeOverride.textBubble = fontColor
     }
     if (cell.kind === GridCellKind.Uri) {

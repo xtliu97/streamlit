@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,14 @@
  * limitations under the License.
  */
 
+import { DIFFERENT_COLUMN_TYPES } from "./differentColumnTypes"
+import { EMPTY } from "./empty"
+import { FEWER_COLUMNS } from "./fewerColumns"
+import { MULTI } from "./multi"
+import { NAMED_INDEX } from "./namedIndex"
+import { DISPLAY_VALUES, STYLER } from "./styler"
+import { TALL, VERY_TALL } from "./tall"
+import { TEN_BY_TEN } from "./tenByTen"
 import { CATEGORICAL } from "./types/categorical"
 import { CATEGORICAL_COLUMN } from "./types/categoricalColumn"
 import { CATEGORICAL_INTERVAL } from "./types/categoricalInterval"
@@ -28,19 +36,11 @@ import { INTERVAL_INT64 } from "./types/intervalInt64"
 import { INTERVAL_UINT64 } from "./types/intervalUint64"
 import { PERIOD } from "./types/period"
 import { RANGE } from "./types/range"
+import { TIMEDELTA } from "./types/timedelta"
 import { UINT64 } from "./types/uint64"
 import { UNICODE } from "./types/unicode"
-import { EMPTY } from "./empty"
-import { MULTI } from "./multi"
-import { NAMED_INDEX } from "./namedIndex"
-import { DISPLAY_VALUES, STYLER } from "./styler"
-import { FEWER_COLUMNS } from "./fewerColumns"
-import { DIFFERENT_COLUMN_TYPES } from "./differentColumnTypes"
 import { VEGA_LITE } from "./vegaLite"
-import { TEN_BY_TEN } from "./tenByTen"
-import { TALL, VERY_TALL } from "./tall"
 import { SMALL, WIDE } from "./wide"
-import { TIMEDELTA } from "./types/timedelta"
 
 export {
   // Types
@@ -52,30 +52,30 @@ export {
   DATETIMETZ,
   DECIMAL,
   DICTIONARY,
+  DIFFERENT_COLUMN_TYPES,
+  DISPLAY_VALUES,
+  // Special cases
+  EMPTY,
+  FEWER_COLUMNS,
   FLOAT64,
   INT64,
   INTERVAL_DATETIME64,
   INTERVAL_FLOAT64,
   INTERVAL_INT64,
   INTERVAL_UINT64,
+  MULTI,
+  NAMED_INDEX,
   PERIOD,
   RANGE,
-  UINT64,
-  UNICODE,
-  TIMEDELTA,
-  // Special cases
-  EMPTY,
-  MULTI,
+  SMALL,
   STYLER,
-  DISPLAY_VALUES,
-  FEWER_COLUMNS,
-  DIFFERENT_COLUMN_TYPES,
-  VEGA_LITE,
-  NAMED_INDEX,
+  TALL,
   // Specific sizes
   TEN_BY_TEN,
-  TALL,
+  TIMEDELTA,
+  UINT64,
+  UNICODE,
+  VEGA_LITE,
   VERY_TALL,
-  SMALL,
   WIDE,
 }

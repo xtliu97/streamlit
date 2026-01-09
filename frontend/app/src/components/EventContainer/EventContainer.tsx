@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import React, { ReactElement, ReactNode } from "react"
+import { ReactElement, ReactNode } from "react"
 
 import { PLACEMENT, ToasterContainer } from "baseui/toast"
 
@@ -33,7 +33,9 @@ function EventContainer({
     <>
       <ToasterContainer
         placement={PLACEMENT.topRight}
-        autoHideDuration={4 * 1000} // in milliseconds
+        // Default autoHideDuration ( in milliseconds), can be adapted by the user
+        // in the Toast.tsx component
+        autoHideDuration={4 * 1000}
         overrides={{
           Root: {
             style: {

@@ -1,4 +1,4 @@
-# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ import contextlib
 import re
 import textwrap
 import traceback
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 from streamlit.runtime.metrics_util import gather_metrics
 
@@ -81,7 +81,7 @@ def echo(
             for child in ast.iter_child_nodes(node):
                 # If child doesn't have "lineno", it is not something we could display
                 if hasattr(child, "lineno"):
-                    line_to_node_map[child.lineno] = child
+                    line_to_node_map[cast("int", child.lineno)] = child
                     collect_body_statements(child)
 
         collect_body_statements(root_node)

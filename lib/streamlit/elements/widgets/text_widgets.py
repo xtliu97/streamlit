@@ -1,4 +1,4 @@
-# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -206,8 +206,8 @@ class TextWidgetsMixin:
         on_change : callable
             An optional callback invoked when this text input's value changes.
 
-        args : tuple
-            An optional tuple of args to pass to the callback.
+        args : list or tuple
+            An optional list or tuple of args to pass to the callback.
 
         kwargs : dict
             An optional dict of kwargs to pass to the callback.
@@ -242,6 +242,8 @@ class TextWidgetsMixin:
               Thumb Up icon. Find additional icons in the `Material Symbols \
               <https://fonts.google.com/icons?icon.set=Material+Symbols&icon.style=Rounded>`_
               font library.
+
+            - ``"spinner"``: Displays a spinner as an icon.
 
         width : "stretch" or int
             The width of the text input widget. This can be one of the
@@ -328,7 +330,9 @@ class TextWidgetsMixin:
         element_id = compute_and_register_element_id(
             "text_input",
             user_key=key,
-            form_id=current_form_id(self.dg),
+            # Explicitly whitelist max_chars to make sure the ID changes when it changes
+            # since the widget value might become invalid based on a different max_chars
+            key_as_main_identity={"max_chars"},
             dg=self.dg,
             label=label,
             value=value,
@@ -535,8 +539,8 @@ class TextWidgetsMixin:
         on_change : callable
             An optional callback invoked when this text_area's value changes.
 
-        args : tuple
-            An optional tuple of args to pass to the callback.
+        args : list or tuple
+            An optional list or tuple of args to pass to the callback.
 
         kwargs : dict
             An optional dict of kwargs to pass to the callback.
@@ -643,7 +647,9 @@ class TextWidgetsMixin:
         element_id = compute_and_register_element_id(
             "text_area",
             user_key=key,
-            form_id=current_form_id(self.dg),
+            # Explicitly whitelist max_chars to make sure the ID changes when it changes
+            # since the widget value might become invalid based on a different max_chars
+            key_as_main_identity={"max_chars"},
             dg=self.dg,
             label=label,
             value=value,

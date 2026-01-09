@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 
-import React from "react"
-
-import { CancelTokenSource } from "axios"
 import { screen } from "@testing-library/react"
 import { userEvent } from "@testing-library/user-event"
 
@@ -28,13 +25,14 @@ import { FileStatus, UploadFileInfo } from "./UploadFileInfo"
 const getProps = (fileStatus: FileStatus): Props => ({
   fileInfo: new UploadFileInfo("filename.txt", 15, 1, fileStatus),
   onDelete: vi.fn(),
+  disabled: false,
 })
 
 describe("FileStatus widget", () => {
   it("shows progress bar when uploading", () => {
     const props = getProps({
       type: "uploading",
-      cancelToken: null as unknown as CancelTokenSource,
+      abortController: new AbortController(),
       progress: 40,
     })
     render(<UploadedFileStatus {...props} />)

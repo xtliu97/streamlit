@@ -8,11 +8,17 @@ updates:
       interval: "daily"
     # Allow a limited number of update PRs at a time
     # to keep the number of parallel dependency updates manageable.
-    open-pull-requests-limit: 3
+    open-pull-requests-limit: 5
+
+    # Use cooldown to avoid updating dependencies too frequently
+    # and minimize risk of supply chain attacks.
+    cooldown:
+      default-days: 5
 
     labels:
       - "change:chore"
       - "impact:internal"
+      - "autofix"
 
     ignore:
       - dependency-name: "baseui"
@@ -44,6 +50,9 @@ updates:
       - dependency-name: "sass"
         # Breaks our build process, needs more investigation
         versions: [">=1.80.0"]
+      - dependency-name: "react-window"
+        # This requires us to update baseui, since that has a dependency on react-window v1.
+        versions: [">=2.0.0"]
 
     groups:
       deck-gl:
@@ -67,19 +76,13 @@ updates:
           - "unified"
       eslint:
         patterns:
-          - "eslint"
-          - "eslint-*"
-          - "@typescript-eslint/*"
-          - "@eslint-react/*"
+          - "*eslint*"
       emotion:
         patterns:
-          - "@emotion/*"
-          - "@emotion-icons/*"
+          - "*emotion*"
       vitest:
         patterns:
-          - "vitest"
-          - "vitest-*"
-          - "@vitest/*"
+          - "*vitest*"
       vite:
         patterns:
           - "vite"
@@ -98,14 +101,17 @@ updates:
     # to keep the number of parallel dependency updates manageable.
     open-pull-requests-limit: 3
 
+    # Use cooldown to avoid updating dependencies too frequently
+    # and minimize risk of supply chain attacks.
+    cooldown:
+      default-days: 5
+
     labels:
       - "change:chore"
       - "impact:internal"
+      - "autofix"
 
     ignore:
-      - dependency-name: "bokeh"
-        # We only support bokeh 2.4.3
-        versions: [">=2.4.3"]
       - dependency-name: "langchain"
         # Newer langchain version conflict with our test setup
         # see: https://github.com/streamlit/streamlit/pull/10227
@@ -122,3 +128,4 @@ updates:
     labels:
       - "change:chore"
       - "impact:internal"
+      - "autofix"

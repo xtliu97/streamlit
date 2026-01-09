@@ -1,4 +1,4 @@
-# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,6 +19,9 @@ from parameterized import parameterized
 
 import streamlit as st
 from streamlit.errors import StreamlitAPIException
+from streamlit.proto.ButtonLikeIconPosition_pb2 import (
+    ButtonLikeIconPosition as ProtoButtonLikeIconPosition,
+)
 from tests.delta_generator_test_case import DeltaGeneratorTestCase
 
 
@@ -56,20 +59,6 @@ class LinkButtonTest(DeltaGeneratorTestCase):
         c = self.get_delta_from_queue().new_element.link_button
         assert c.type == type
 
-    def test_use_container_width_can_be_set_to_true(self):
-        """Test use_container_width can be set to true."""
-        st.link_button("label", url="https://streamlit.io", use_container_width=True)
-
-        c = self.get_delta_from_queue().new_element.link_button
-        assert c.use_container_width
-
-    def test_use_container_width_is_false_by_default(self):
-        """Test use_container_width is false by default."""
-        st.link_button("the label", url="https://streamlit.io")
-
-        c = self.get_delta_from_queue().new_element.link_button
-        assert not c.use_container_width
-
     def test_emoji_icon(self):
         """Test that it can be called with an emoji icon."""
         st.link_button("the label", url="https://streamlit.io", icon="🎈")
@@ -83,6 +72,13 @@ class LinkButtonTest(DeltaGeneratorTestCase):
 
         c = self.get_delta_from_queue().new_element.link_button
         assert c.icon == ":material/bolt:"
+
+    def test_icon_position(self):
+        """Test that icon_position is serialized for link buttons."""
+        st.link_button("the label", url="https://streamlit.io", icon_position="right")
+
+        c = self.get_delta_from_queue().new_element.link_button
+        assert c.icon_position == ProtoButtonLikeIconPosition.RIGHT
 
     def test_invalid_icon(self):
         """Test that an error is raised if an invalid icon is provided."""

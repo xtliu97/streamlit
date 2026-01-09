@@ -1,4 +1,4 @@
-# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ import platform
 import re
 import sys
 
-SYSTEM = platform.system().lower()
+SYSTEM = platform.system().lower()  # ty: ignore[unresolved-attribute]
 IS_WINDOWS = SYSTEM == "windows"
 IS_DARWIN = SYSTEM == "darwin"
 IS_LINUX_OR_BSD = (SYSTEM == "linux") or ("bsd" in SYSTEM)

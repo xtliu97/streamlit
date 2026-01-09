@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,11 @@
  * limitations under the License.
  */
 
-import merge from "lodash/merge"
-import mergeWith from "lodash/mergeWith"
+import { merge, mergeWith } from "lodash-es"
 
 import {
   convertRemToPx,
   EmotionTheme,
-  getBlue80,
   getDivergingColorsArray,
   getGray30,
   getGray70,
@@ -121,7 +119,7 @@ export function applyStreamlitTheme(config: any, theme: EmotionTheme): any {
     },
     mark: {
       tooltip: { content: "encoding" },
-      color: getBlue80(theme),
+      color: theme.colors.chartCategoricalColors[0],
     },
     bar: {
       binSpacing: convertRemToPx(theme.spacing.twoXS),

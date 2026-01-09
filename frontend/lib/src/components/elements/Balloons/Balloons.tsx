@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import React, { FC, memo } from "react"
+import { FC, memo } from "react"
 
 /*
  * IMPORTANT: If you change the asset imports below, make sure they still work if Streamlit is
@@ -26,9 +26,10 @@ import Balloon2 from "~lib/assets/img/balloons/balloon-2.png"
 import Balloon3 from "~lib/assets/img/balloons/balloon-3.png"
 import Balloon4 from "~lib/assets/img/balloons/balloon-4.png"
 import Balloon5 from "~lib/assets/img/balloons/balloon-5.png"
+import { RenderInPortalIfExists } from "~lib/components/core/Portal/RenderInPortalIfExists"
 import Particles from "~lib/components/elements/Particles"
 import { ParticleProps } from "~lib/components/elements/Particles/Particles"
-import { RenderInPortalIfExists } from "~lib/components/core/Portal/RenderInPortalIfExists"
+import { getCrossOriginAttribute } from "~lib/util/UriUtil"
 
 import { StyledBalloon } from "./styled-components"
 
@@ -51,7 +52,16 @@ export interface Props {
 
 const Balloon: FC<React.PropsWithChildren<ParticleProps>> = ({
   particleType,
-}) => <StyledBalloon src={BALLOON_IMAGES[particleType]} />
+  resourceCrossOriginMode,
+}) => {
+  const src = BALLOON_IMAGES[particleType]
+  return (
+    <StyledBalloon
+      src={src}
+      crossOrigin={getCrossOriginAttribute(resourceCrossOriginMode, src)}
+    />
+  )
+}
 
 const Balloons: FC<React.PropsWithChildren<Props>> = ({ scriptRunId }) => (
   // Keys should be unique each time, so React replaces the images in the DOM and their animations

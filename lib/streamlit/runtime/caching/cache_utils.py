@@ -1,4 +1,4 @@
-# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,13 +24,25 @@ import threading
 import time
 from abc import abstractmethod
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any, Callable, Final, Generic, TypeVar, cast, overload
+from collections.abc import Callable
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Final,
+    Generic,
+    Literal,
+    TypeAlias,
+    TypeVar,
+    cast,
+    overload,
+)
 
 from typing_extensions import ParamSpec
 
 from streamlit import type_util
 from streamlit.dataframe_util import is_unevaluated_data_object
-from streamlit.elements.spinner import spinner
+from streamlit.delta_generator_singletons import get_dg_singleton_instance
+from streamlit.errors import StreamlitAPIException
 from streamlit.logger import get_logger
 from streamlit.runtime.caching.cache_errors import (
     CacheError,
@@ -53,6 +65,8 @@ from streamlit.runtime.scriptrunner_utils.script_run_context import (
 )
 
 if TYPE_CHECKING:
+    from types import FunctionType
+
     from streamlit.runtime.caching.cache_type import CacheType
 
 _LOGGER: Final = get_logger(__name__)
@@ -64,6 +78,35 @@ TTLCACHE_TIMER = time.monotonic
 # Type-annotate the cached function.
 P = ParamSpec("P")
 R = TypeVar("R")
+
+# A function called with a cache entry as the argument when cache entries are removed.
+OnRelease: TypeAlias = Callable[[Any], None]
+
+
+# The scope of a cache.
+CacheScope: TypeAlias = Literal["global", "session"]
+
+
+def get_session_id_or_throw() -> str:
+    """Returns the active session ID from the thread-local run context.
+
+    Raises
+    ------
+    StreamlitAPIException
+        Raised if there is no thread-local run context.
+    """
+    from streamlit.runtime.scriptrunner_utils.script_run_context import (
+        get_script_run_ctx,
+    )
+
+    ctx = get_script_run_ctx()
+    if ctx is None:
+        raise StreamlitAPIException(
+            "A session-scoped cache was accessed outside of the app execution thread. "
+            "Make sure all session-scoped caches are read during rendering and not "
+            "read in background threads."
+        )
+    return ctx.session_id
 
 
 class Cache(Generic[R]):
@@ -81,7 +124,9 @@ class Cache(Generic[R]):
         ------
         CacheKeyNotFoundError
             Raised if value_key is not in the cache.
-
+        StreamlitAPIException
+            Raised when a thread attempts to read from a session-scoped cache but that
+            thread does not have a session associated with it.
         """
         raise NotImplementedError
 
@@ -89,6 +134,12 @@ class Cache(Generic[R]):
     def write_result(self, value_key: str, value: R, messages: list[MsgData]) -> None:
         """Write a value and associated messages to the cache, overwriting any existing
         result that uses the value_key.
+
+        Raises
+        ------
+        StreamlitAPIException
+            Raised when a thread attempts to write to a session-scoped cache but that
+            thread does not have a session associated with it.
         """
         # We *could* `del self._value_locks[value_key]` here, since nobody will be taking
         # a compute_value_lock for this value_key after the result is written.
@@ -135,11 +186,13 @@ class CachedFuncInfo(Generic[P, R]):
         hash_funcs: HashFuncsDict | None,
         show_spinner: bool | str,
         show_time: bool = False,
+        scope: CacheScope = "global",
     ) -> None:
         self.func = func
         self.hash_funcs = hash_funcs
         self.show_spinner = show_spinner
         self.show_time = show_time
+        self.scope = scope
 
     @property
     def cache_type(self) -> CacheType:
@@ -150,7 +203,10 @@ class CachedFuncInfo(Generic[P, R]):
         raise NotImplementedError
 
     def get_function_cache(self, function_key: str) -> Cache[R]:
-        """Get or create the function cache for the given key."""
+        """Get or create the function cache for the given key.
+
+        This is responsible for handling cache scope correctly.
+        """
         raise NotImplementedError
 
 
@@ -216,7 +272,7 @@ class CachedFunc(Generic[P, R]):
         if isinstance(self._info.show_spinner, str):
             spinner_message = self._info.show_spinner
         elif self._info.show_spinner is True:
-            name = self._info.func.__qualname__
+            name = cast("FunctionType", self._info.func).__qualname__
             if len(args) == 0 and len(kwargs) == 0:
                 spinner_message = f"Running `{name}()`."
             else:
@@ -258,8 +314,11 @@ class CachedFunc(Generic[P, R]):
         # basically like auto-setting "show_spinner=False" on the @st.cache decorators
         # on behalf of the user.
         is_nested_cache_function = in_cached_function.get()
+
         spinner_or_no_context = (
-            spinner(spinner_message, _cache=True, show_time=self._info.show_time)
+            get_dg_singleton_instance().main_dg.spinner(
+                spinner_message, _cache=True, show_time=self._info.show_time
+            )
             if spinner_message is not None and not is_nested_cache_function
             else contextlib.nullcontext()
         )
@@ -485,6 +544,7 @@ def _make_function_key(cache_type: CacheType, func: Callable[..., Any]) -> str:
     the function's source code changes.
     """
     func_hasher = hashlib.new("md5", usedforsecurity=False)
+    func = cast("FunctionType", func)
 
     # Include the function's __module__ and __qualname__ strings in the hash.
     # This means that two identical functions in different modules

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import React, { Fragment, ReactElement, useContext } from "react"
+import { Fragment, ReactElement, useContext } from "react"
 
 import { Components } from "react-markdown"
 
@@ -23,15 +23,16 @@ import { Heading as HeadingProto } from "@streamlit/protobuf"
 import IsDialogContext from "~lib/components/core/IsDialogContext"
 
 import {
-  StyledHeaderDivider,
-  StyledStreamlitMarkdown,
-} from "./styled-components"
-import "katex/dist/katex.min.css"
-import {
   HeadingWithActionElements,
   RenderedMarkdown,
   Tags,
 } from "./StreamlitMarkdown"
+import {
+  StyledHeaderDivider,
+  StyledStreamlitMarkdown,
+} from "./styled-components"
+
+import "katex/dist/katex.min.css"
 
 export interface HeadingProtoProps {
   element: HeadingProto

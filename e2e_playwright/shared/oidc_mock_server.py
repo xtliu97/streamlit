@@ -1,4 +1,4 @@
-# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,8 +16,9 @@ import base64
 import json
 import time
 import uuid
+from collections.abc import Callable
 from functools import partial
-from typing import Any, Callable
+from typing import Any
 from urllib.parse import parse_qs
 from wsgiref.simple_server import make_server
 

@@ -1,4 +1,4 @@
-# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,13 +21,6 @@ st.page_link("http://www.example.com", label="Icon Example", icon="🌎")
 st.page_link("http://www.example.com", label="Help Example", help="Some help text")
 st.page_link("http://www.example.com", label="Disabled Example", disabled=True)
 
-# Default is container width=false in main app section
-st.page_link(
-    "http://www.example.com",
-    label="Main container_width=true",
-    use_container_width=True,
-)
-
 # Test Material icon
 st.page_link(
     "http://www.example.com", label="Material Icon Example", icon=":material/home:"
@@ -46,20 +39,47 @@ page_with_material_icon = st.Page(
 )
 
 # Test passing st.Page objects to st.page_link
-st.page_link(page_with_icon, label="Page Link with Icon from st.Page")
-st.page_link(page_with_material_icon, label="Page Link with Material Icon from st.Page")
+st.page_link(
+    page_with_icon,
+    label="Page Link with Icon from st.Page",
+    query_params={"foo": ["bar", "baz"]},
+)
+st.page_link(
+    page_with_material_icon,
+    label="Page Link with Material Icon from st.Page",
+    query_params=[("foo", "bar"), ("baz", "qux")],
+)
 
 # Test overriding page icons in st.page_link
 st.page_link(page_with_icon, label="Override Page Icon from st.Page", icon="🔥")
+
+with st.expander("Page Link Width Examples", expanded=True):
+    st.page_link(
+        "https://example.com", label="Content Width (Default)", width="content"
+    )
+    st.page_link("https://example.com", label="Stretch Width", width="stretch")
+    st.page_link("https://example.com", label="500px Width", width=500)
 
 with st.sidebar:
     st.page_link("http://www.example.com", label="Default Sidebar")
     st.page_link("http://www.example.com", label="Icon Sidebar", icon="🌎")
     st.page_link("http://www.example.com", label="Help Sidebar", help="Some help text")
     st.page_link("http://www.example.com", label="Disabled Sidebar", disabled=True)
-    # Page links are container width by default in the sidebar
+    # Page links are container width in the sidebar, so width should be overridden.
     st.page_link(
         "http://www.example.com",
-        label="Sidebar container_width=false",
-        use_container_width=False,
+        label="Sidebar content width",
+        width="content",
     )
+
+with st.container(key="custom_theme"):
+    st.page_link("http://www.example.com", label="Custom Theme Example")
+    st.button("Button Example", type="primary")
+
+
+st.page_link(
+    "http://www.example.com",
+    label="Icon Right",
+    icon="🌎",
+    icon_position="right",
+)

@@ -1,4 +1,4 @@
-# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -67,6 +67,9 @@ def app(
         if response is None or response.status != 200:
             raise RuntimeError("Unable to load page")
 
+        # Clear localStorage to ensure clean state for tests
+        page.evaluate("() => window.localStorage.clear()")
+
         start_capture_traces(page)
         wait_for_app_loaded(page)
         yield page
@@ -81,12 +84,12 @@ def setup_viewport_and_verify_title(
 ) -> None:
     """Common setup for viewport, waiting, and title verification."""
     app.set_viewport_size({"width": width, "height": height})
-    wait_for_app_run(app)
 
     # Verify the fixture was applied correctly by checking the page title
     expected_title = f"Sidebar Test - {sidebar_mode.title()}"
     expect(app).to_have_title(expected_title)
 
+    # Reload the page to allow viewport size change to take effect.
     app.reload()
     wait_for_app_run(app)
 

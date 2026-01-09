@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -133,10 +133,20 @@ export const getRejectedFileInfo = (
   maxUploadSizeInBytes: number
 ): UploadFileInfo => {
   const { file, errors } = rejected
-  return new UploadFileInfo(file.name, file.size, fileId, {
-    type: "error",
-    errorMessage: errors
-      .map(error => getErrorMessage(error.code, file, maxUploadSizeInBytes))
-      .join(" "),
-  })
+
+  // For directory uploads, use the relative path to preserve directory structure
+  const fileName = file.webkitRelativePath || file.name
+
+  return new UploadFileInfo(
+    fileName,
+    file.size,
+    fileId,
+    {
+      type: "error",
+      errorMessage: errors
+        .map(error => getErrorMessage(error.code, file, maxUploadSizeInBytes))
+        .join(" "),
+    },
+    file
+  )
 }

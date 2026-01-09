@@ -1,4 +1,4 @@
-# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,6 +20,9 @@ from e2e_playwright.shared.app_utils import (
     check_top_level_class,
     click_checkbox,
     click_toggle,
+    expect_prefixed_markdown,
+    get_element_by_key,
+    select_selectbox_option,
 )
 
 
@@ -58,8 +61,7 @@ def change_widget_values(app: Page):
     ).click(force=True)
 
     # Change the selectbox value.
-    form_1.get_by_test_id("stSelectbox").locator("input").click()
-    app.locator("[data-baseweb='popover']").locator("li").nth(1).click()
+    select_selectbox_option(app, "Selectbox", "bar")
 
     # Change the select slider value.
     form_1.get_by_test_id("stSlider").nth(0).get_by_role("slider").press("ArrowRight")
@@ -125,6 +127,8 @@ def test_changes_widget_values_after_form_submitted(app: Page):
     expect(markdown_elements.nth(9)).to_have_text("Text Input: bar")
     expect(markdown_elements.nth(10)).to_have_text("Time Input: 00:00:00")
     expect(markdown_elements.nth(11)).to_have_text("Toggle Input: True")
+
+    expect_prefixed_markdown(app, "Submit button session state:", "True")
 
 
 def test_form_with_stretched_button(
@@ -340,3 +344,69 @@ def test_form_with_dataframe(app: Page, assert_snapshot: ImageCompareFunction):
         form_container,
         name="st_form-with_dataframe_toolbar",
     )
+
+
+def test_form_submit_button_width_examples(
+    app: Page, assert_snapshot: ImageCompareFunction
+):
+    """Test form submit button width examples via screenshot matching."""
+    form = get_element_by_key(app, "width_tests")
+    submit_elements = form.get_by_test_id("stFormSubmitButton")
+
+    assert_snapshot(submit_elements.nth(0), name="st_form_submit_button-width_content")
+    assert_snapshot(submit_elements.nth(1), name="st_form_submit_button-width_stretch")
+    assert_snapshot(submit_elements.nth(2), name="st_form_submit_button-width_250px")
+
+
+def test_submit_button_with_key(app: Page):
+    """Test that the submit button can have a custom css class via the key argument."""
+    submit_button = get_element_by_key(app, "submit_button_form_1")
+    expect(submit_button).to_be_visible()
+
+
+# Firefox has some issues with sub-pixel flakiness
+# but functional everything is working fine with firefox.
+@pytest.mark.skip_browser("firefox")
+def test_form_submit_button_displays_shortcut(app: Page):
+    """Ensure shortcut labels are rendered for form submit buttons."""
+    shortcut_button = get_element_by_key(app, "shortcut_submit_button")
+    expect(shortcut_button.locator("kbd")).to_have_text("Ctrl + Alt + S")
+
+
+# Firefox has some issues with sub-pixel flakiness
+# but functional everything is working fine with firefox.
+@pytest.mark.skip_browser("firefox")
+def test_form_submit_button_shortcut_triggers(app: Page):
+    """Ensure pressing the shortcut activates the form submit button."""
+    shortcut_button = get_element_by_key(app, "shortcut_submit_button")
+    expect(shortcut_button).to_be_visible()
+    expect(shortcut_button.locator("kbd")).to_have_text("Ctrl + Alt + S")
+
+    # Press hotkey to trigger the button:
+    app.keyboard.press("Control+Alt+KeyS")
+    wait_for_app_run(app)
+    expect(app.get_by_text("Shortcut form submitted!")).to_be_visible()
+
+
+# Firefox has some issues with sub-pixel flakiness
+# but functional everything is working fine with firefox.
+@pytest.mark.skip_browser("firefox")
+def test_dynamic_submit_button(app: Page, assert_snapshot: ImageCompareFunction):
+    """Test that the submit button can be updated dynamically."""
+    submit_button = get_element_by_key(app, "dynamic_button_with_key")
+    expect(submit_button).to_be_visible()
+
+    expect(submit_button).to_contain_text("Initial dynamic button")
+    assert_snapshot(submit_button, name="st_form_submit_button-dynamic_initial")
+    # Click the toggle to update the button props
+    click_toggle(app, "Update button props")
+
+    expect(submit_button).to_contain_text("Updated dynamic button")
+    submit_button.scroll_into_view_if_needed()
+    assert_snapshot(submit_button, name="st_form_submit_button-dynamic_updated")
+
+    # Click the submit button:
+    submit_button.click()
+    wait_for_app_run(app)
+
+    expect_prefixed_markdown(app, "Clicked updated button:", "True")

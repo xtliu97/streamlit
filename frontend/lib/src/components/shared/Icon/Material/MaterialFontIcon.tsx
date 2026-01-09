@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import React, { ReactElement } from "react"
+import { ReactElement } from "react"
 
-import { IconSize, ThemeColor } from "~lib/theme"
+import { IconSize } from "~lib/theme"
 
 import {
   StyledMaterialIcon,
@@ -27,10 +27,11 @@ interface MaterialIconProps {
   iconName: string
   pack: string
   size?: IconSize
-  color?: ThemeColor
+  color?: string
   margin?: string
   padding?: string
   testid?: string
+  style?: React.CSSProperties
 }
 
 const getDefaultProps = ({
@@ -47,11 +48,13 @@ const getDefaultProps = ({
 
 const MaterialFontIcon = ({
   iconName,
+  style,
   ...props
 }: MaterialIconProps): ReactElement => {
   return (
     <StyledMaterialIcon
       {...getDefaultProps(props)}
+      style={style}
       data-testid={props.testid || "stIconMaterial"}
       // Prevent the icon text from being translated
       // this would break the icon display in the UI.
@@ -64,3 +67,4 @@ const MaterialFontIcon = ({
 }
 
 export default MaterialFontIcon
+export type { StyledMaterialIconProps }

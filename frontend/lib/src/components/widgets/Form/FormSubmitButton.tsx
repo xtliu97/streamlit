@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import React, { ReactElement, useEffect } from "react"
+import { ReactElement, useCallback, useEffect } from "react"
 
 import { Button as ButtonProto } from "@streamlit/protobuf"
 
@@ -26,8 +26,10 @@ import BaseButton, {
   BaseButtonTooltip,
   DynamicButtonLabel,
 } from "~lib/components/shared/BaseButton"
-import { WidgetStateManager } from "~lib/WidgetStateManager"
+import { mapProtoIconPosition } from "~lib/components/shared/BaseButton/iconPosition"
+import { useRegisterShortcut } from "~lib/hooks/useRegisterShortcut"
 import { useRequiredContext } from "~lib/hooks/useRequiredContext"
+import { WidgetStateManager } from "~lib/WidgetStateManager"
 
 export interface Props {
   disabled: boolean
@@ -39,6 +41,7 @@ export interface Props {
 export function FormSubmitButton(props: Props): ReactElement {
   const { disabled, element, widgetMgr, fragmentId } = props
   const { formId } = element
+  const shortcut = element.shortcut ? element.shortcut : undefined
 
   const { formsData } = useRequiredContext(FormsContext)
   const hasInProgressUpload = formsData.formsWithUploads.has(formId)
@@ -50,27 +53,43 @@ export function FormSubmitButton(props: Props): ReactElement {
     kind = BaseButtonKind.TERTIARY_FORM_SUBMIT
   }
 
+  const isDisabled = disabled || hasInProgressUpload
+
   useEffect(() => {
     widgetMgr.addSubmitButton(formId, element)
     return () => widgetMgr.removeSubmitButton(formId, element)
   }, [widgetMgr, formId, element])
 
+  const handleSubmit = useCallback((): void => {
+    if (isDisabled) {
+      return
+    }
+
+    widgetMgr.submitForm(element.formId, fragmentId, element)
+  }, [isDisabled, widgetMgr, element, fragmentId])
+
+  useRegisterShortcut({
+    shortcut,
+    disabled: isDisabled,
+    onActivate: handleSubmit,
+  })
+
   return (
     <Box className="stFormSubmitButton" data-testid="stFormSubmitButton">
-      <BaseButtonTooltip
-        help={element.help}
-        containerWidth={element.useContainerWidth}
-      >
+      <BaseButtonTooltip help={element.help} containerWidth={true}>
         <BaseButton
           kind={kind}
           size={BaseButtonSize.SMALL}
-          containerWidth={element.useContainerWidth}
-          disabled={disabled || hasInProgressUpload}
-          onClick={() => {
-            widgetMgr.submitForm(element.formId, fragmentId, element)
-          }}
+          containerWidth={true}
+          disabled={isDisabled}
+          onClick={handleSubmit}
         >
-          <DynamicButtonLabel icon={element.icon} label={element.label} />
+          <DynamicButtonLabel
+            icon={element.icon}
+            iconPosition={mapProtoIconPosition(element.iconPosition)}
+            label={element.label}
+            shortcut={shortcut}
+          />
         </BaseButton>
       </BaseButtonTooltip>
     </Box>

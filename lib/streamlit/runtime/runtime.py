@@ -1,4 +1,4 @@
-# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import asyncio
+import sys
 import time
 import traceback
 from dataclasses import dataclass, field
@@ -22,6 +23,7 @@ from enum import Enum
 from typing import TYPE_CHECKING, Final, NamedTuple
 
 from streamlit.components.lib.local_component_registry import LocalComponentRegistry
+from streamlit.components.v2.component_manager import BidiComponentManager
 from streamlit.logger import get_logger
 from streamlit.proto.ForwardMsg_pb2 import ForwardMsg
 from streamlit.runtime.app_session import AppSession
@@ -47,7 +49,10 @@ from streamlit.runtime.state import (
     SCRIPT_RUN_WITHOUT_ERRORS_KEY,
     SessionStateStatProvider,
 )
-from streamlit.runtime.stats import StatsManager
+from streamlit.runtime.stats import (
+    StatsManager,
+    StatsProvider,
+)
 from streamlit.runtime.websocket_session_manager import WebsocketSessionManager
 
 if TYPE_CHECKING:
@@ -57,10 +62,15 @@ if TYPE_CHECKING:
     from streamlit.proto.BackMsg_pb2 import BackMsg
     from streamlit.runtime.caching.storage import CacheStorageManager
     from streamlit.runtime.media_file_storage import MediaFileStorage
+    from streamlit.runtime.scriptrunner_utils.script_run_context import UserInfoType
     from streamlit.runtime.uploaded_file_manager import UploadedFileManager
 
 # Wait for the script run result for 60s and if no result is available give up
 SCRIPT_RUN_CHECK_TIMEOUT: Final = 60
+
+# On Windows, periodically check for signals when blocked in asyncio.wait()
+# This ensures Ctrl+C can be processed even when no sessions are connected
+_SIGNAL_CHECK_INTERVAL: Final = 0.5 if sys.platform == "win32" else None
 
 _LOGGER: Final = get_logger(__name__)
 
@@ -94,6 +104,11 @@ class RuntimeConfig:
     # The ComponentRegistry instance to use.
     component_registry: BaseComponentRegistry = field(
         default_factory=LocalComponentRegistry
+    )
+
+    # The BidiComponentManager instance to use for v2 components.
+    bidi_component_registry: BidiComponentManager = field(
+        default_factory=BidiComponentManager
     )
 
     # The SessionManager class to be used.
@@ -196,10 +211,14 @@ class Runtime:
 
         # Initialize managers
         self._component_registry = config.component_registry
+        self._bidi_component_registry = config.bidi_component_registry
         self._uploaded_file_mgr = config.uploaded_file_manager
         self._media_file_mgr = MediaFileManager(storage=config.media_file_storage)
         self._cache_storage_manager = config.cache_storage_manager
         self._script_cache = ScriptCache()
+
+        # Discover and register components for CCv2 from installed packages
+        self._bidi_component_registry.discover_and_register_components()
 
         self._session_mgr = config.session_manager_class(
             session_storage=config.session_storage,
@@ -211,8 +230,13 @@ class Runtime:
         self._stats_mgr = StatsManager()
         self._stats_mgr.register_provider(get_data_cache_stats_provider())
         self._stats_mgr.register_provider(get_resource_cache_stats_provider())
-        self._stats_mgr.register_provider(self._uploaded_file_mgr)
+        if self._uploaded_file_mgr is not None:
+            self._stats_mgr.register_provider(self._uploaded_file_mgr)
         self._stats_mgr.register_provider(SessionStateStatProvider(self._session_mgr))
+
+        # Register session manager for session event metrics if it implements StatsProvider
+        if isinstance(self._session_mgr, StatsProvider):
+            self._stats_mgr.register_provider(self._session_mgr)
 
     @property
     def state(self) -> RuntimeState:
@@ -221,6 +245,10 @@ class Runtime:
     @property
     def component_registry(self) -> BaseComponentRegistry:
         return self._component_registry
+
+    @property
+    def bidi_component_registry(self) -> BidiComponentManager:
+        return self._bidi_component_registry
 
     @property
     def uploaded_file_mgr(self) -> UploadedFileManager:
@@ -335,7 +363,7 @@ class Runtime:
     def connect_session(
         self,
         client: SessionClient,
-        user_info: dict[str, str | bool | None],
+        user_info: UserInfoType,
         existing_session_id: str | None = None,
         session_id_override: str | None = None,
     ) -> str:
@@ -398,7 +426,7 @@ class Runtime:
     def create_session(
         self,
         client: SessionClient,
-        user_info: dict[str, str | bool | None],
+        user_info: UserInfoType,
         existing_session_id: str | None = None,
         session_id_override: str | None = None,
     ) -> str:
@@ -609,16 +637,22 @@ class Runtime:
                     # because it thinks self._state must be INITIAL | ONE_OR_MORE_SESSIONS_CONNECTED.
 
                     # Wait for new websocket connections (new sessions):
-                    _, pending_tasks = await asyncio.wait(  # type: ignore[unreachable]
+                    done_tasks, pending_tasks = await asyncio.wait(  # type: ignore[unreachable]
                         (
                             asyncio.create_task(async_objs.must_stop.wait()),
                             asyncio.create_task(async_objs.has_connection.wait()),
                         ),
                         return_when=asyncio.FIRST_COMPLETED,
+                        # On Windows, use a timeout to ensure signal handlers can be processed
+                        timeout=_SIGNAL_CHECK_INTERVAL,
                     )
                     # Clean up pending tasks to avoid memory leaks
                     for task in pending_tasks:
                         task.cancel()
+
+                    # If we timed out (Windows only), continue the loop to check must_stop
+                    if not done_tasks and _SIGNAL_CHECK_INTERVAL is not None:
+                        continue
                 elif self._state == RuntimeState.ONE_OR_MORE_SESSIONS_CONNECTED:
                     async_objs.need_send_data.clear()
 
@@ -643,12 +677,14 @@ class Runtime:
                     break
 
                 # Wait for new proto messages that need to be sent out:
-                _, pending_tasks = await asyncio.wait(
+                done_tasks, pending_tasks = await asyncio.wait(
                     (
                         asyncio.create_task(async_objs.must_stop.wait()),
                         asyncio.create_task(async_objs.need_send_data.wait()),
                     ),
                     return_when=asyncio.FIRST_COMPLETED,
+                    # On Windows, use a timeout to ensure signal handlers can be processed
+                    timeout=_SIGNAL_CHECK_INTERVAL,
                 )
                 # We need to cancel the pending tasks (the `must_stop` one in most situations).
                 # Otherwise, this would stack up one waiting task per loop
@@ -656,6 +692,10 @@ class Runtime:
                 # causing an increase in memory (-> memory leak).
                 for task in pending_tasks:
                     task.cancel()
+
+                # If we timed out (Windows only), continue to check must_stop
+                if not done_tasks and _SIGNAL_CHECK_INTERVAL is not None:
+                    continue
 
             # Shut down all AppSessions.
             for session_info in self._session_mgr.list_sessions():

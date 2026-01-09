@@ -1,4 +1,4 @@
-# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,6 +13,6 @@
 # limitations under the License.
 
 
-from theme_weight_test_app import run_theme_weight_tester_app  # type: ignore
+from size_and_weight_test_app import run_size_and_weight_test_app  # type: ignore
 
-run_theme_weight_tester_app()
+run_size_and_weight_test_app()

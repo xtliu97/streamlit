@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import React, {
+import {
   ReactElement,
   ReactNode,
   useCallback,
@@ -25,11 +25,13 @@ import React, {
 import Hotkeys from "react-hot-keys"
 import { CSSTransition } from "react-transition-group"
 
+import { ConnectionState } from "@streamlit/connection"
 import {
   BaseButton,
   BaseButtonKind,
   DynamicIcon,
   Icon,
+  isKeyboardEventFromEditableTarget,
   Placement,
   ScriptRunState,
   Timer,
@@ -37,8 +39,8 @@ import {
   useEmotionTheme,
 } from "@streamlit/lib"
 import { isNullOrUndefined, notNullOrUndefined } from "@streamlit/utils"
-import { ConnectionState } from "@streamlit/connection"
 
+import { getConnectionStateUI } from "./getConnectionStateUI"
 import IconRunning from "./IconRunning"
 import {
   StyledAppButtonContainer,
@@ -49,7 +51,6 @@ import {
   StyledShortcutLabel,
   StyledStatusWidget,
 } from "./styled-components"
-import { getConnectionStateUI } from "./getConnectionStateUI"
 
 /** Component props */
 export interface StatusWidgetProps {
@@ -115,9 +116,9 @@ const StatusWidget: React.FC<StatusWidgetProps> = ({
   showScriptChangedActions,
 }) => {
   const [showRunningMan, setShowRunningMan] = useState(false)
-  const minimizePromptTimer: React.MutableRefObject<Timer | null> =
+  const minimizePromptTimerRef: React.MutableRefObject<Timer | null> =
     useRef(null)
-  const delayShowRunningManTimer: React.MutableRefObject<Timer | null> =
+  const delayShowRunningManTimerRef: React.MutableRefObject<Timer | null> =
     useRef(null)
   const theme = useEmotionTheme()
 
@@ -127,9 +128,14 @@ const StatusWidget: React.FC<StatusWidgetProps> = ({
     }
   }
 
-  const handleKeyDown = (keyName: string): void => {
-    // NOTE: 'r' is handled at the App Level
-    if (keyName === "a") {
+  const handleKeyDown = (
+    keyName: string,
+    keyboardEvent?: KeyboardEvent
+  ): void => {
+    // NOTE: 'r' and 'c' are handled at the App level.
+    // See `isKeyboardEventFromEditableTarget` for editable/shadow DOM behavior;
+    // we suppress the "Always rerun" hotkey while the user is typing.
+    if (keyName === "a" && !isKeyboardEventFromEditableTarget(keyboardEvent)) {
       handleAlwaysRerunClick()
     }
   }
@@ -138,8 +144,8 @@ const StatusWidget: React.FC<StatusWidgetProps> = ({
 
   const showRunningManAfterInitialDelay = useCallback(
     (delay: number): void => {
-      if (delayShowRunningManTimer.current !== null) {
-        delayShowRunningManTimer.current.setTimeout(() => {
+      if (delayShowRunningManTimerRef.current !== null) {
+        delayShowRunningManTimerRef.current.setTimeout(() => {
           setShowRunningMan(true)
         }, delay)
       }
@@ -156,15 +162,15 @@ const StatusWidget: React.FC<StatusWidgetProps> = ({
   }
 
   useEffect(() => {
-    if (minimizePromptTimer.current === null) {
-      minimizePromptTimer.current = new Timer()
+    if (minimizePromptTimerRef.current === null) {
+      minimizePromptTimerRef.current = new Timer()
     }
-    if (delayShowRunningManTimer.current === null) {
-      delayShowRunningManTimer.current = new Timer()
+    if (delayShowRunningManTimerRef.current === null) {
+      delayShowRunningManTimerRef.current = new Timer()
     }
 
-    const minimizePromptTimerCurr = minimizePromptTimer.current
-    const delayShowRunningManTimerCurr = minimizePromptTimer.current
+    const minimizePromptTimerCurr = minimizePromptTimerRef.current
+    const delayShowRunningManTimerCurr = minimizePromptTimerRef.current
 
     return () => {
       minimizePromptTimerCurr.cancel()
@@ -210,7 +216,7 @@ const StatusWidget: React.FC<StatusWidgetProps> = ({
         <StyledAppStatus>
           <DynamicIcon
             size="lg"
-            iconValue={":material/info:"}
+            iconValue=":material/info:"
             color={theme.colors.fadedText60}
           />
           <StyledAppStatusLabel isPrompt>File change.</StyledAppStatusLabel>
@@ -274,19 +280,24 @@ const StatusWidget: React.FC<StatusWidgetProps> = ({
   // We keep track of our most recent result from `renderWidget`,
   // via `this.curView`, so that we can fade out our previous state
   // if `renderWidget` returns null after returning a non-null value.
-  const curView = useRef<ReactNode>()
-  const prevView = curView.current
-  curView.current = renderWidget()
+  const curViewRef = useRef<ReactNode>()
+  // eslint-disable-next-line react-hooks/refs -- TODO: Do not access ref during render
+  const prevView = curViewRef.current
+  // eslint-disable-next-line react-hooks/refs -- TODO: Do not access ref during render
+  curViewRef.current = renderWidget()
 
-  if (isNullOrUndefined(curView.current) && isNullOrUndefined(prevView)) {
+  // eslint-disable-next-line react-hooks/refs -- TODO: Do not access ref during render
+  if (isNullOrUndefined(curViewRef.current) && isNullOrUndefined(prevView)) {
     return <></>
   }
 
   let animateIn: boolean
   let renderView: ReactNode
-  if (notNullOrUndefined(curView.current)) {
+  // eslint-disable-next-line react-hooks/refs -- TODO: Do not access ref during render
+  if (notNullOrUndefined(curViewRef.current)) {
     animateIn = true
-    renderView = curView.current
+    // eslint-disable-next-line react-hooks/refs -- TODO: Do not access ref during render
+    renderView = curViewRef.current
   } else {
     animateIn = false
     renderView = prevView

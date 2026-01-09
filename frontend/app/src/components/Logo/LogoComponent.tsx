@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,22 @@
  * limitations under the License.
  */
 
-import React, { ReactElement } from "react"
+import { ReactElement, useCallback, useContext, useMemo } from "react"
 
 import { getLogger } from "loglevel"
 
-import { StreamlitEndpoints } from "@streamlit/connection"
-import { Logo } from "@streamlit/protobuf"
 import {
   StyledLogo,
+  StyledLogoButton,
   StyledLogoLink,
 } from "@streamlit/app/src/components/Sidebar/styled-components"
+import { StreamlitEndpoints } from "@streamlit/connection"
+import {
+  getCrossOriginAttribute,
+  LibConfigContext,
+  NavigationContext,
+} from "@streamlit/lib"
+import { Logo } from "@streamlit/protobuf"
 
 const LOG = getLogger("LogoComponent")
 
@@ -31,7 +37,6 @@ export interface LogoComponentProps {
   appLogo: Logo | null
   endpoints: StreamlitEndpoints
   collapsed?: boolean
-  sidebarWidth?: string
   componentName?: string
   dataTestId?: string
 }
@@ -43,10 +48,28 @@ const LogoComponent = ({
   appLogo,
   endpoints,
   collapsed = false,
-  sidebarWidth,
   componentName = "Logo",
   dataTestId = "stLogo",
 }: LogoComponentProps): ReactElement | null => {
+  const { resourceCrossOriginMode } = useContext(LibConfigContext)
+  const { appPages, onPageChange, currentPageScriptHash } =
+    useContext(NavigationContext)
+
+  // Find the home page (the default page) and check if this is a multi-page app
+  const homePage = useMemo(
+    () => appPages.find(page => page.isDefault),
+    [appPages]
+  )
+  const isMultiPageApp = appPages.length > 1
+  const isOnHomePage = homePage?.pageScriptHash === currentPageScriptHash
+
+  const handleLogoClick = useCallback(() => {
+    // Only navigate if we're not already on the home page
+    if (homePage?.pageScriptHash && !isOnHomePage) {
+      onPageChange(homePage.pageScriptHash)
+    }
+  }, [homePage, onPageChange, isOnHomePage])
+
   if (!appLogo) {
     return null
   }
@@ -68,19 +91,25 @@ const LogoComponent = ({
 
   const source = endpoints.buildMediaURL(displayImage)
 
+  const crossOrigin = getCrossOriginAttribute(
+    resourceCrossOriginMode,
+    displayImage
+  )
+
   const logo = (
     <StyledLogo
       src={source}
       size={appLogo.size}
-      sidebarWidth={sidebarWidth}
       alt="Logo"
       className="stLogo"
       data-testid={dataTestId}
       // Save to logo's src to send on load error
       onError={_ => handleLogoError(source)}
+      crossOrigin={crossOrigin}
     />
   )
 
+  // If an explicit link is provided, use it (opens in new tab)
   if (appLogo.link) {
     return (
       <StyledLogoLink
@@ -94,7 +123,25 @@ const LogoComponent = ({
     )
   }
 
-  return logo
+  // In multi-page apps without an explicit link, clicking the logo navigates to home page
+  // Only use the clickable button when not already on the home page
+  if (isMultiPageApp && homePage && !isOnHomePage) {
+    return (
+      <StyledLogoButton
+        onClick={handleLogoClick}
+        data-testid="stLogoLink"
+        aria-label="Navigate to home page"
+      >
+        {logo}
+      </StyledLogoButton>
+    )
+  }
+
+  // Wrapping the logo into a div makes it easier to correctly
+  // handle the width in all cases. It already gets wrapped via a
+  // link element (<a>) above when link is provided.
+  // https://github.com/streamlit/streamlit/issues/12326
+  return <div>{logo}</div>
 }
 
 export default LogoComponent

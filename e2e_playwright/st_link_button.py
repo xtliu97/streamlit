@@ -1,4 +1,4 @@
-# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ st.link_button(
 st.link_button(
     "Container **full width** *markdown*",
     "https://streamlit.io",
-    use_container_width=True,
+    width="stretch",
     help="help text",
 )
 
@@ -38,7 +38,7 @@ st.link_button(
     "Container **full width** *markdown* ~~primary~~",
     "https://streamlit.io",
     type="primary",
-    use_container_width=True,
+    width="stretch",
     help="help text here",
 )
 
@@ -67,11 +67,30 @@ st.link_button(
     "Tertiary link - container width",
     url="https://streamlit.io",
     type="tertiary",
-    use_container_width=True,
+    width="stretch",
 )
 
 st.link_button(
     "Link Button with help",
     url="https://streamlit.io",
     help="help text",
+)
+
+st.link_button(
+    "Link Button with shortcut",
+    url="https://streamlit.io",
+    shortcut="Ctrl+Alt+Z",
+)
+
+with st.expander("Link Button Width Examples", expanded=True):
+    st.link_button("Content Width (Default)", "https://example.com", width="content")
+    st.link_button("Stretch Width", "https://example.com", width="stretch")
+    st.link_button("400px Width", "https://example.com", width=400)
+
+
+st.link_button(
+    "Icon Right",
+    "https://streamlit.io",
+    icon=":material/bolt:",
+    icon_position="right",
 )

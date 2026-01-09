@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,8 @@ import {
   MetricsEvent,
 } from "@streamlit/protobuf"
 
-import { ExportedTheme } from "~lib/theme"
 import { ScriptRunState } from "~lib/ScriptRunState"
+import { ExportedTheme } from "~lib/theme"
 import { PresetThemeName } from "~lib/theme/types"
 
 /**

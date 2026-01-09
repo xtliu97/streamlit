@@ -1,4 +1,4 @@
-# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,16 +14,24 @@
 
 from __future__ import annotations
 
+import decimal
+import fractions
+import numbers
 import re
 import textwrap
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING, Any, Final, TypeAlias, Union, cast
 
 from streamlit.errors import StreamlitAPIException
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    import numpy as np
+
     from streamlit.type_util import SupportsStr
 
 _ALPHANUMERIC_CHAR_REGEX: Final = re.compile(r"^[a-zA-Z0-9_&\-\. ]+$")
+_COLOR_ICON_REGEX: Final = re.compile(r"^:([^[]+)\[([^\]]+)\]$")
 
 
 def clean_text(text: SupportsStr) -> str:
@@ -58,10 +66,87 @@ def is_material_icon(maybe_icon: str) -> bool:
 
 
 def validate_icon_or_emoji(icon: str | None) -> str:
-    """Validate an icon or emoji and return it in normalized format if valid."""
-    if icon is not None and icon.startswith(":material"):
+    """Validate an icon or emoji and return it in normalized format if valid.
+
+    Parameters
+    ----------
+    icon : str | None
+        The icon string to validate. Can be an emoji, material icon, colored
+        material icon (e.g., :red[:material/home:]), or None.
+
+    Returns
+    -------
+    str
+        The validated and normalized icon string, or empty string if None.
+
+    Raises
+    ------
+    StreamlitAPIException
+        If the icon format is invalid or not recognized as a valid emoji or
+        material icon.
+    """
+    if icon is None:
+        return ""
+
+    # Support the special case of the spinner icon:
+    if icon == "spinner":
+        return "spinner"
+
+    if icon.startswith(":material"):
         return validate_material_icon(icon)
+
+    if color_icon_match := re.match(_COLOR_ICON_REGEX, icon):
+        color, icon_name = color_icon_match.groups()
+        if not icon_name.startswith(":material"):
+            raise StreamlitAPIException(
+                f"Color {color} can only be used with Material icons. "
+                "Please use a Material icon shortcode like **`:material\u200b/thumb_up:`**."
+            )
+        material_icon_name = validate_material_icon(icon_name)
+        color = validate_color(color)
+        return f":{color}[{material_icon_name}]"
+
     return validate_emoji(icon)
+
+
+def validate_color(maybe_color: str) -> str:
+    """Validate a color name and return it in normalized format if valid.
+
+    Parameters
+    ----------
+    maybe_color : str
+        The color name to validate.
+
+    Returns
+    -------
+    str
+        The validated color name.
+
+    Raises
+    ------
+    StreamlitAPIException
+        If the color name is not in the list of valid colors (blue, green, orange,
+        red, violet, gray, grey, rainbow, primary).
+    """
+    valid_colors = {
+        "blue",
+        "green",
+        "orange",
+        "red",
+        "violet",
+        "gray",
+        "grey",
+        "rainbow",
+        "primary",
+    }
+
+    if maybe_color in valid_colors:
+        return maybe_color
+
+    raise StreamlitAPIException(
+        f'The value "{maybe_color}" is not a valid color name. Please use a valid color in: '
+        f"{', '.join(valid_colors)}."
+    )
 
 
 def validate_emoji(maybe_emoji: str | None) -> str:
@@ -197,3 +282,54 @@ def to_snake_case(camel_case_str: str) -> str:
     """
     s1 = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", camel_case_str)
     return re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
+
+
+AnyNumber: TypeAlias = Union[
+    "np.integer[Any]",
+    "np.floating[Any]",
+    int,
+    float,
+    decimal.Decimal,
+    fractions.Fraction,
+    numbers.Real,
+    numbers.Number,
+]
+
+
+def from_number(value: AnyNumber) -> str:
+    """Render a real numeric type as a string for display.
+
+    Parameters
+    ----------
+    value : AnyNumber
+        The numeric value to convert to a string. Can be an ``int``, ``float``,
+        any ``numbers.Number`` (e.g., ``decimal.Decimal``), or a NumPy numeric type
+        with an ``item()`` method.
+
+    Returns
+    -------
+    str
+        String representation of the numeric value.
+
+    Raises
+    ------
+    TypeError
+        If the value is not of an accepted numeric type.
+    """
+    if isinstance(value, numbers.Number):
+        return str(value)
+    if hasattr(value, "item"):
+        # Add support for numpy values (e.g. int16, float64, etc.)
+        try:
+            # Item could also be just a variable, so we use try, except
+            item_value = cast("Callable[[], Any]", value.item)()
+            if isinstance(item_value, (float, int)):
+                return str(item_value)
+        except Exception:  # noqa: S110
+            # If the numpy item is not a valid value, the TypeError below will be raised.
+            pass
+
+    raise TypeError(
+        f"'{value}' is of type {type(value)}, which is not an accepted type. "
+        "Please convert the value to an accepted number type."
+    )

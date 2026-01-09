@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,8 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-import React from "react"
 
 import { screen } from "@testing-library/react"
 import { userEvent } from "@testing-library/user-event"
@@ -73,7 +71,7 @@ describe("Expander container", () => {
   })
 
   it("renders expander with a spinner icon", () => {
-    const props = getProps({ icon: "spinner" })
+    const props = getProps({ icon: "spinner", expanded: false })
     render(
       <Expander {...props}>
         <div>test</div>
@@ -83,7 +81,7 @@ describe("Expander container", () => {
   })
 
   it("renders expander with a check icon", () => {
-    const props = getProps({ icon: ":material/check:" })
+    const props = getProps({ icon: ":material/check:", expanded: false })
     render(
       <Expander {...props}>
         <div>test</div>
@@ -93,7 +91,7 @@ describe("Expander container", () => {
   })
 
   it("renders expander with a error icon", () => {
-    const props = getProps({ icon: ":material/error:" })
+    const props = getProps({ icon: ":material/error:", expanded: false })
     render(
       <Expander {...props}>
         <div>test</div>
@@ -103,7 +101,7 @@ describe("Expander container", () => {
   })
 
   it("renders expander with an emoji icon", () => {
-    const props = getProps({ icon: "🚀" })
+    const props = getProps({ icon: "🚀", expanded: false })
     render(
       <Expander {...props}>
         <div>test</div>
@@ -114,7 +112,7 @@ describe("Expander container", () => {
   })
 
   it("renders expander with a material icon", () => {
-    const props = getProps({ icon: ":material/add_circle:" })
+    const props = getProps({ icon: ":material/add_circle:", expanded: false })
     render(
       <Expander {...props}>
         <div>test</div>

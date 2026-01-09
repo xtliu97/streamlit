@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,15 @@
 import { Block as BlockProto, streamlit } from "@streamlit/protobuf"
 
 import { AppNode, BlockNode } from "~lib/AppNode"
+import { Direction } from "~lib/components/core/Layout/utils"
+import { ComponentRegistry } from "~lib/components/widgets/CustomComponent"
 import { FileUploadClient } from "~lib/FileUploadClient"
+import { ElementsSetVisitor } from "~lib/render-tree/visitors/ElementsSetVisitor"
 import { ScriptRunState } from "~lib/ScriptRunState"
 import { StreamlitEndpoints } from "~lib/StreamlitEndpoints"
 import { EmotionTheme, getDividerColors } from "~lib/theme"
 import { isValidElementId } from "~lib/util/utils"
 import { WidgetStateManager } from "~lib/WidgetStateManager"
-import { Direction } from "~lib/components/core/Layout/utils"
 
 export function getClassnamePrefix(direction: Direction): string {
   return direction === Direction.HORIZONTAL
@@ -50,14 +52,14 @@ export function isElementStale(
   }
 
   if (scriptRunState === ScriptRunState.RUNNING) {
-    if (fragmentIdsThisRun && fragmentIdsThisRun.length) {
+    if (fragmentIdsThisRun?.length) {
       // if the fragmentId is set, we only want to mark elements as stale
       // that belong to the same fragmentId and have a different scriptRunId.
       // If they have the same scriptRunId, they were just updated.
       return Boolean(
         node.fragmentId &&
-          fragmentIdsThisRun.includes(node.fragmentId) &&
-          node.scriptRunId !== scriptRunId
+        fragmentIdsThisRun.includes(node.fragmentId) &&
+        node.scriptRunId !== scriptRunId
       )
     }
     return node.scriptRunId !== scriptRunId
@@ -87,13 +89,13 @@ export function assignDividerColor(
   const allColorMap = getDividerColors(theme)
   const allColorKeys = Object.keys(allColorMap)
 
-  // Limited colors for auto assignment
-  const { blue, green, orange, red, violet } = allColorMap
-  const autoColorMap = { blue, green, orange, red, violet }
+  // Limited colors for auto assignment - exclude gray/grey & rainbow
+  const { blue, green, orange, red, violet, yellow } = allColorMap
+  const autoColorMap = { blue, green, orange, red, violet, yellow }
   const autoColorKeys = Object.keys(autoColorMap)
   let dividerIndex = 0
 
-  Array.from(node.getElements()).forEach(element => {
+  for (const element of ElementsSetVisitor.collectElements(node)) {
     const divider = element.heading?.divider
     if (element.type === "heading" && divider) {
       if (divider === "auto") {
@@ -107,7 +109,7 @@ export function assignDividerColor(
         element.heading.divider = allColorMap[divider]
       }
     }
-  })
+  }
 }
 export interface BaseBlockProps {
   /**
@@ -141,6 +143,12 @@ export interface BaseBlockProps {
    * to use it, for example, in Dialogs to prevent fullscreen issues.
    */
   disableFullscreenMode?: boolean
+
+  /**
+   * The app's ComponentRegistry instance. Dispatches "Custom Component"
+   * iframe messages to ComponentInstances.
+   */
+  componentRegistry: ComponentRegistry
 }
 
 /**

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,26 @@
  * limitations under the License.
  */
 
-import React, { Suspense } from "react"
+import { Suspense } from "react"
 
-import { IconSize } from "~lib/theme"
+import { useEmotionTheme } from "@streamlit/lib"
+
+import {
+  EmotionTheme,
+  getMarkdownTextColors,
+  hasLightBackgroundColor,
+  IconSize,
+} from "~lib/theme"
 
 import { EmojiIcon } from "./Icon"
-import MaterialFontIcon from "./Material/MaterialFontIcon"
-import { StyledDynamicIcon, StyledImageIcon } from "./styled-components"
+import MaterialFontIcon, {
+  StyledMaterialIconProps,
+} from "./Material/MaterialFontIcon"
+import {
+  StyledDynamicIcon,
+  StyledImageIcon,
+  StyledSpinnerIcon,
+} from "./styled-components"
 
 interface IconPackEntry {
   pack: string
@@ -40,9 +53,26 @@ export function parseIconPackEntry(iconName: string): IconPackEntry {
 }
 
 /**
+ * Parses the icon value to extract color and icon name.
+ */
+function parseColorAndIcon(iconValue: string): {
+  color?: string
+  iconValue: string
+} {
+  const match = iconValue.match(/^:([^[]+)\[([^\]]+)\]$/)
+  if (match) {
+    return { color: match[1], iconValue: match[2] }
+  }
+  return { iconValue }
+}
+
+/**
  * Returns true if the icon value is a material icon.
  */
 export function isMaterialIcon(iconName: string): boolean {
+  if (!iconName) {
+    return false
+  }
   const parsedIcon = parseIconPackEntry(iconName)
   return parsedIcon.pack === "material" && parsedIcon.icon !== ""
 }
@@ -58,16 +88,26 @@ export function getFilledStarIconSrc(): string {
 export interface DynamicIconProps {
   iconValue: string
   size?: IconSize
-  margin?: string
-  padding?: string
   testid?: string
   color?: string
+  style?: React.CSSProperties
 }
 
 const DynamicIconDispatcher = ({
   iconValue,
   ...props
 }: DynamicIconProps): React.ReactElement => {
+  if (iconValue === "spinner") {
+    return (
+      <StyledDynamicIcon {...props}>
+        <StyledSpinnerIcon
+          data-testid={props.testid || "stSpinnerIcon"}
+          {...props}
+        />
+      </StyledDynamicIcon>
+    )
+  }
+
   const { pack, icon } = parseIconPackEntry(iconValue)
   switch (pack) {
     case "material":
@@ -98,15 +138,61 @@ const DynamicIconDispatcher = ({
   }
 }
 
-export const DynamicIcon = (props: DynamicIconProps): React.ReactElement => (
-  <Suspense
-    fallback={
-      <StyledDynamicIcon {...props}>
-        <EmojiIcon {...props}>&nbsp;</EmojiIcon>
-      </StyledDynamicIcon>
-    }
-    key={props.iconValue}
-  >
-    <DynamicIconDispatcher {...props} />
-  </Suspense>
-)
+function createColorMapping(
+  theme: EmotionTheme
+): Map<string, React.CSSProperties> {
+  const { red, orange, green, blue, violet, gray, primary } =
+    getMarkdownTextColors(theme)
+
+  return new Map(
+    Object.entries({
+      blue: { color: blue },
+      green: { color: green },
+      orange: { color: orange },
+      red: { color: red },
+      violet: { color: violet },
+      gray: { color: gray },
+      grey: { color: gray },
+      rainbow: {
+        background: `linear-gradient(to right, ${red}, ${orange}, ${green}, ${blue}, ${violet})`,
+        WebkitBackgroundClip: "text",
+        WebkitTextFillColor: "transparent",
+      },
+      primary: { color: primary },
+    })
+  )
+}
+
+export const DynamicIcon = (props: DynamicIconProps): React.ReactElement => {
+  const { color: parsedColor, iconValue: parsedIconValue } = parseColorAndIcon(
+    props.iconValue
+  )
+  const theme: EmotionTheme = useEmotionTheme()
+  const themeMode = hasLightBackgroundColor(theme) ? "light" : "dark"
+  const colorMapping = createColorMapping(theme)
+
+  // Get color style from parsed color, or use color prop as fallback
+  const colorStyle = parsedColor
+    ? colorMapping.get(parsedColor)
+    : props.color
+      ? { color: props.color }
+      : undefined
+
+  const mergedProps = {
+    ...props,
+    iconValue: parsedIconValue,
+    style: { ...props.style, ...colorStyle },
+  }
+  return (
+    <Suspense
+      fallback={
+        <StyledDynamicIcon {...mergedProps}>
+          <EmojiIcon {...mergedProps}>&nbsp;</EmojiIcon>
+        </StyledDynamicIcon>
+      }
+      key={`${mergedProps.iconValue}-${themeMode}`}
+    >
+      <DynamicIconDispatcher {...mergedProps} />
+    </Suspense>
+  )
+}

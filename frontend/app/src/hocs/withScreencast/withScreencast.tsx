@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import React, {
+import {
   ComponentType,
   FC,
   PropsWithChildren,
@@ -26,14 +26,14 @@ import React, {
 import hoistNonReactStatics from "hoist-non-react-statics"
 import { getLogger } from "loglevel"
 
-import { isNullOrUndefined } from "@streamlit/utils"
-import ScreenCastRecorder from "@streamlit/app/src/util/ScreenCastRecorder"
+import Countdown from "@streamlit/app/src/components/Countdown"
 import {
   ScreencastDialog,
   UnsupportedBrowserDialog,
   VideoRecordedDialog,
 } from "@streamlit/app/src/hocs/withScreencast/components"
-import Countdown from "@streamlit/app/src/components/Countdown"
+import ScreenCastRecorder from "@streamlit/app/src/util/ScreenCastRecorder"
+import { isNullOrUndefined } from "@streamlit/utils"
 
 export type Steps =
   | "UNSUPPORTED"

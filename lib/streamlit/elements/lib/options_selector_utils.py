@@ -1,4 +1,4 @@
-# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,24 +15,24 @@
 from __future__ import annotations
 
 from enum import Enum, EnumMeta
-from typing import TYPE_CHECKING, Any, Callable, Final, TypeVar, overload
+from typing import TYPE_CHECKING, Any, Final, TypeVar, overload
 
 from streamlit import config, logger
 from streamlit.dataframe_util import OptionSequence, convert_anything_to_list
 from streamlit.errors import StreamlitAPIException
 from streamlit.runtime.state.common import RegisterWidgetResult
 from streamlit.type_util import (
-    T,
     check_python_comparable,
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Sequence
+    from collections.abc import Callable, Iterable, Sequence
 
 _LOGGER: Final = logger.get_logger(__name__)
 
 _FLOAT_EQUALITY_EPSILON: Final[float] = 0.000000000005
 _Value = TypeVar("_Value")
+T = TypeVar("T")
 
 
 def index_(iterable: Iterable[_Value], x: _Value) -> int:

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 import styled from "@emotion/styled"
 import { transparentize } from "color2k"
 
-import { getSidebarHorizontalSpacing } from "@streamlit/app/src/components/Sidebar/styled-components"
 import { EmotionTheme, hasLightBackgroundColor } from "@streamlit/lib"
 
 /**
@@ -51,9 +50,10 @@ export const getNavTextColor = (
     : transparentize(theme.colors.bodyText, 0.25)
 }
 
-export const StyledSidebarNavContainer = styled.div({
+export const StyledSidebarNavContainer = styled.div(({ theme }) => ({
   position: "relative",
-})
+  fontFamily: theme.genericFonts.bodyFont,
+}))
 
 export const StyledSidebarNavItems = styled.ul(({ theme }) => {
   return {
@@ -97,8 +97,6 @@ export const StyledSidebarNavIcon = styled.span<StyledSidebarNavIconProps>(
 )
 
 export const StyledSidebarNavLinkListItem = styled.li(({ theme }) => ({
-  marginLeft: getSidebarHorizontalSpacing(theme),
-  marginRight: getSidebarHorizontalSpacing(theme),
   marginTop: theme.spacing.threeXS,
   marginBottom: theme.spacing.threeXS,
 }))
@@ -211,8 +209,6 @@ export const StyledSidebarNavSectionHeader = styled.header<{
     color: getNavTextColor(theme, false),
     lineHeight: theme.lineHeights.small,
     paddingRight: theme.spacing.sm,
-    marginLeft: getSidebarHorizontalSpacing(theme),
-    marginRight: getSidebarHorizontalSpacing(theme),
     marginTop: theme.spacing.sm,
     marginBottom: theme.spacing.twoXS,
     display: "flex",
@@ -239,7 +235,7 @@ export const StyledViewButton = styled.button(({ theme }) => {
     border: "none",
     borderRadius: theme.radii.default,
     marginTop: theme.spacing.twoXS,
-    marginLeft: theme.spacing.lg,
+    marginLeft: theme.spacing.none,
     marginBottom: theme.spacing.none,
     marginRight: theme.spacing.none,
     padding: `${theme.spacing.threeXS} ${theme.spacing.sm}`,
@@ -257,8 +253,6 @@ export const StyledViewButton = styled.button(({ theme }) => {
 export const StyledSidebarNavSeparator = styled.div(({ theme }) => ({
   paddingTop: theme.spacing.lg,
   borderBottom: `${theme.sizes.borderWidth} solid ${theme.colors.borderColor}`,
-  marginRight: getSidebarHorizontalSpacing(theme),
-  marginLeft: getSidebarHorizontalSpacing(theme),
 }))
 
 export const StyledNavSectionContainer = styled.div(({ theme }) => ({

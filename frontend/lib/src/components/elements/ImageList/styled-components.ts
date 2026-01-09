@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,22 +16,26 @@
 
 import styled from "@emotion/styled"
 
-export const StyledImageList = styled.div(({ theme }) => ({
+export const StyledImageList = styled.div<{
+  shouldStretch?: boolean
+}>(({ theme, shouldStretch }) => ({
   display: "flex",
   flexDirection: "row",
   flexWrap: "wrap",
   // Not supported in Safari, but at least it's not a regression for those users:
   rowGap: theme.spacing.lg,
   maxWidth: "100%",
-  width: "fit-content",
+  width: shouldStretch ? "100%" : "fit-content",
 }))
 
-export const StyledImageContainer = styled.div(({ theme }) => ({
+export const StyledImageContainer = styled.div<{
+  shouldStretch?: boolean
+}>(({ theme, shouldStretch }) => ({
   display: "flex",
   flexDirection: "column",
   alignItems: "stretch",
-  width: "auto",
-  flexGrow: 0,
+  width: shouldStretch ? "100%" : "auto",
+  flexGrow: shouldStretch ? 1 : 0,
 
   ">img": {
     borderRadius: theme.radii.default,

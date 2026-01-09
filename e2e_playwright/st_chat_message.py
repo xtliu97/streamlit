@@ -1,4 +1,4 @@
-# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ np.random.seed(0)
 # Generate a random dataframe
 df = pd.DataFrame(
     np.random.randn(5, 5),
-    columns=(f"col_{i}" for i in range(5)),
+    columns=[f"col_{i}" for i in range(5)],
 )
 
 with st.chat_message("user"):
@@ -90,6 +90,12 @@ with st.chat_message("user", avatar=":material/airline_seat_recline_extra:"):
 
 with st.chat_message("AI", avatar=":material/photo_album:"):
     st.write("Hello from AI, non-emoji icon.")
+
+with st.chat_message("bot", avatar=":red[:material/smart_toy:]"):
+    st.write("Hello with red material icon.")
+
+with st.chat_message("bot", avatar=":rainbow[:material/palette:]"):
+    st.write("Hello with rainbow material icon.")
 
 query = "This is a hardcoded user message"
 sources = "example sources"

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,10 +21,11 @@ export interface StyledTabContainerProps {
   isOverflowing: boolean
   tabHeight: string
   width: React.CSSProperties["width"]
+  flex: React.CSSProperties["flex"]
 }
 
 export const StyledTabContainer = styled.div<StyledTabContainerProps>(
-  ({ theme, isOverflowing, tabHeight, width }) => ({
+  ({ theme, isOverflowing, tabHeight, width, flex }) => ({
     ...(isOverflowing
       ? {
           position: "relative",
@@ -46,6 +47,9 @@ export const StyledTabContainer = styled.div<StyledTabContainerProps>(
       : {}),
     ...(width && {
       width,
+    }),
+    ...(flex && {
+      flex,
     }),
   })
 )

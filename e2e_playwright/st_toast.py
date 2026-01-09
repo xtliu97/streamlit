@@ -1,4 +1,4 @@
-# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,6 +24,11 @@ st.toast(
 )
 
 st.toast("Your edited image was saved!", icon=":material/cabin:")
+
+if st.button("Show duration toasts"):
+    st.toast("I am a toast with a short duration", duration=2)
+    st.toast("I am a toast with a long duration", duration="long")
+    st.toast("I am a persistent toast", duration="infinite")
 
 
 @st.dialog("Streamlit Toast Notification")

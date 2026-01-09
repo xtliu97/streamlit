@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,18 @@
  * limitations under the License.
  */
 
-import React, { useState } from "react"
+import { Fragment, useState } from "react"
 
-import { PLACEMENT, TRIGGER_TYPE, Popover as UIPopover } from "baseui/popover"
 import {
   KeyboardArrowDown,
   KeyboardArrowUp,
 } from "@emotion-icons/material-outlined"
-import { useTheme } from "@emotion/react"
+import { PLACEMENT, TRIGGER_TYPE, Popover as UIPopover } from "baseui/popover"
 
-import { hasLightBackgroundColor, Icon } from "@streamlit/lib"
-import { isNullOrUndefined } from "@streamlit/utils"
-import { IAppPage } from "@streamlit/protobuf"
 import { StreamlitEndpoints } from "@streamlit/connection"
+import { hasLightBackgroundColor, Icon, useEmotionTheme } from "@streamlit/lib"
+import { IAppPage } from "@streamlit/protobuf"
+import { isNullOrUndefined } from "@streamlit/utils"
 
 import {
   StyledIconContainer,
@@ -47,6 +46,7 @@ interface TopNavSectionProps {
   pageLinkBaseUrl: string
   currentPageScriptHash: string
   hideChevron?: boolean
+  widgetsDisabled: boolean
 }
 
 const TopNavSection = ({
@@ -57,9 +57,10 @@ const TopNavSection = ({
   pageLinkBaseUrl,
   currentPageScriptHash,
   hideChevron = false,
+  widgetsDisabled,
 }: TopNavSectionProps): React.ReactElement | null => {
   const [open, setOpen] = useState(false)
-  const theme = useTheme()
+  const theme = useEmotionTheme()
   const lightBackground = hasLightBackgroundColor(theme)
   const showSections = sections.length > 1
 
@@ -76,7 +77,7 @@ const TopNavSection = ({
       triggerType={TRIGGER_TYPE.click}
       placement={PLACEMENT.bottomLeft}
       content={() => (
-        <StyledPopoverContent data-testid="stTopNavSection">
+        <StyledPopoverContent data-testid="stTopNavPopover">
           {sections.map((section, _sectionIndex) => {
             const sectionName = section[0].sectionHeader
 
@@ -94,7 +95,7 @@ const TopNavSection = ({
               const pageName = String(item.pageName || "")
 
               return (
-                <React.Fragment key={`${item.pageScriptHash}-${pageName}`}>
+                <Fragment key={`${item.pageScriptHash}-${pageName}`}>
                   {index === 0 && showSections && (
                     <StyledSectionName>{sectionName}</StyledSectionName>
                   )}
@@ -103,17 +104,19 @@ const TopNavSection = ({
                       {...item}
                       icon={item.icon || null}
                       isTopNav={true}
+                      isInDropdown={true}
                       isActive={currentPageScriptHash === item.pageScriptHash}
                       onClick={handleClick}
                       pageUrl={endpoints.buildAppPageURL(
                         pageLinkBaseUrl,
                         item
                       )}
+                      widgetsDisabled={widgetsDisabled}
                     >
                       {pageName}
                     </SidebarNavLink>
                   </StyledTopNavSidebarNavLinkContainer>
-                </React.Fragment>
+                </Fragment>
               )
             })
           })}
@@ -173,6 +176,7 @@ const TopNavSection = ({
           tabIndex={0}
           onClick={() => setOpen(!open)}
           isOpen={open}
+          data-testid="stTopNavSection"
         >
           <StyledNavSectionText>{title}</StyledNavSectionText>
           {!hideChevron && (

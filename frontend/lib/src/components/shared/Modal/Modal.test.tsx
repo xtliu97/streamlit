@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,8 @@
  * limitations under the License.
  */
 
-import React from "react"
-
-import { BaseProvider, LightTheme } from "baseui"
 import { screen } from "@testing-library/react"
+import { BaseProvider, LightTheme } from "baseui"
 
 import { render } from "~lib/test_util"
 
@@ -45,8 +43,13 @@ describe("calculateModalSize", () => {
     const size = calculateModalSize("auto")
     expect(size).toBe("auto")
   })
-  it("calculated the size based on the spacaing and content width when size is 'full'", () => {
-    const size = calculateModalSize("full", "100px", "100px")
+  it("calculates the size based on the spacing and content width when size is 'medium'", () => {
+    const size = calculateModalSize("medium", "100px", "100px")
     expect(size).toBe("calc(100px + 100px)")
+  })
+
+  it("calculates the size based on the spacing and content width when size is 'large'", () => {
+    const size = calculateModalSize("large", "100px", "100px")
+    expect(size).toBe("80rem")
   })
 })

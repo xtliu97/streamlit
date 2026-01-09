@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-import React, { memo, ReactElement, useEffect, useMemo, useRef } from "react"
+import { memo, ReactElement, useEffect, useMemo, useRef } from "react"
 
 import { getLogger } from "loglevel"
 
 import { ISubtitleTrack, Video as VideoProto } from "@streamlit/protobuf"
 
+import { useCrossOriginAttribute } from "~lib/hooks/useCrossOriginAttribute"
 import { StreamlitEndpoints } from "~lib/StreamlitEndpoints"
 import { WidgetStateManager as ElementStateManager } from "~lib/WidgetStateManager"
 
@@ -49,6 +50,8 @@ function Video({
   /* Element may contain "url" or "data" property. */
   const { type, url, startTime, subtitles, endTime, loop, autoplay, muted } =
     element
+
+  let crossOrigin = useCrossOriginAttribute(url)
 
   const preventAutoplay = useMemo<boolean>(() => {
     if (!element.id) {
@@ -242,8 +245,12 @@ function Video({
     )
   }
 
-  // Only in dev mode we set crossOrigin to "anonymous" to avoid CORS issues
+  // When in dev mode we set crossOrigin to "anonymous" to avoid CORS issues
   // when streamlit frontend and backend are running on different ports
+  if (process.env.NODE_ENV === "development" && subtitles.length > 0) {
+    crossOrigin = "anonymous"
+  }
+
   return (
     // eslint-disable-next-line jsx-a11y/media-has-caption
     <video
@@ -255,26 +262,21 @@ function Video({
       autoPlay={autoplay && !preventAutoplay}
       src={endpoints.buildMediaURL(url)}
       style={VIDEO_STYLE}
-      crossOrigin={
-        process.env.NODE_ENV === "development" && subtitles.length > 0
-          ? "anonymous"
-          : undefined
-      }
+      crossOrigin={crossOrigin}
       onError={handleVideoError}
     >
-      {subtitles &&
-        subtitles.map((subtitle: ISubtitleTrack, idx: number) => (
-          <track
-            // TODO: Update to match React best practices
-            // eslint-disable-next-line @eslint-react/no-array-index-key
-            key={idx}
-            kind="captions"
-            src={endpoints.buildMediaURL(`${subtitle.url}`)}
-            label={`${subtitle.label}`}
-            default={idx === 0}
-            data-testid="stVideoSubtitle"
-          />
-        ))}
+      {subtitles?.map((subtitle: ISubtitleTrack, idx: number) => (
+        <track
+          // TODO: Update to match React best practices
+          // eslint-disable-next-line @eslint-react/no-array-index-key
+          key={idx}
+          kind="captions"
+          src={endpoints.buildMediaURL(`${subtitle.url}`)}
+          label={`${subtitle.label}`}
+          default={idx === 0}
+          data-testid="stVideoSubtitle"
+        />
+      ))}
     </video>
   )
 }

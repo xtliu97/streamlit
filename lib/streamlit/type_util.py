@@ -1,4 +1,4 @@
-# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -38,12 +38,10 @@ from typing import (
     Literal,
     NamedTuple,
     Protocol,
-    TypeVar,
-    Union,
+    TypeAlias,
+    TypeGuard,
     overload,
 )
-
-from typing_extensions import TypeAlias, TypeGuard
 
 from streamlit.errors import StreamlitAPIException
 
@@ -54,8 +52,6 @@ if TYPE_CHECKING:
     from pydeck import Deck
 
     from streamlit.delta_generator import DeltaGenerator
-
-T = TypeVar("T")
 
 # we define our own type here because mypy doesn't seem to support the shape type and
 # reports unreachable code. When mypy supports it, we can remove this custom type.
@@ -127,6 +123,16 @@ def _is_type_instance(obj: object, type_to_check: str) -> bool:
     return type_to_check in [get_fqn(t) for t in type(obj).__mro__]
 
 
+def get_object_name(obj: object) -> str:
+    """Get a simplified name of the given object."""
+    if hasattr(obj, "__qualname__") and isinstance(obj.__qualname__, str):
+        return obj.__qualname__
+    if hasattr(obj, "__name__") and isinstance(obj.__name__, str):
+        return obj.__name__
+
+    return type(obj).__qualname__
+
+
 def get_fqn(the_type: type) -> str:
     """Get module.type_name for a given type."""
     return f"{the_type.__module__}.{the_type.__qualname__}"
@@ -142,7 +148,7 @@ _BYTES_LIKE_TYPES: Final[tuple[type, ...]] = (
     bytearray,
 )
 
-BytesLike: TypeAlias = Union[bytes, bytearray]
+BytesLike: TypeAlias = bytes | bytearray
 
 
 def is_bytes_like(obj: object) -> TypeGuard[BytesLike]:
@@ -228,7 +234,7 @@ def is_plotly_chart(obj: object) -> TypeGuard[Figure | list[Any] | dict[str, Any
 
 def is_graphviz_chart(
     obj: object,
-) -> TypeGuard[graphviz.Graph | graphviz.Digraph]:
+) -> TypeGuard[graphviz.Graph | graphviz.Digraph | graphviz.Source]:
     """True if input looks like a GraphViz chart."""
     return (
         # In GraphViz < 0.18
@@ -323,6 +329,24 @@ def is_pydantic_model(obj: object) -> bool:
         return False
 
     return _is_type_instance(obj, "pydantic.main.BaseModel")
+
+
+def is_sequence_of_pydantic_models(obj: object) -> TypeGuard[Sequence[Any]]:
+    """True if obj is a non-empty list/tuple/set/frozenset of Pydantic model instances."""
+    if not isinstance(obj, (list, tuple, set, frozenset)) or len(obj) == 0:
+        return False
+    first_element = next(iter(obj))
+    return is_pydantic_model(first_element)
+
+
+def dump_pydantic_sequence(obj: Sequence[object]) -> list[dict[str, Any]]:
+    """Dump a sequence of Pydantic models to a list of dictionaries."""
+    first_element = next(iter(obj))
+    # Pydantic v2 uses model_dump(), v1 uses dict()
+    if has_callable_attr(first_element, "model_dump"):
+        # Use mode="json" to ensure proper serialization of types like Decimal
+        return [item.model_dump(mode="json") for item in obj]  # type: ignore
+    return [item.dict() for item in obj]  # type: ignore
 
 
 def _is_from_streamlit(obj: object) -> bool:

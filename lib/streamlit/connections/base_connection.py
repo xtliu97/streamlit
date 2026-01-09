@@ -1,4 +1,4 @@
-# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import json
 from abc import ABC, abstractmethod
-from typing import Any, Generic, TypeVar
+from typing import Any, Generic, Literal, TypeVar, cast
 
 from streamlit.runtime.secrets import AttrDict, secrets_singleton
 from streamlit.util import calc_md5
@@ -109,14 +109,16 @@ class BaseConnection(ABC, Generic[RawConnectionT]):
         are implementing their class' ``_connect`` method. User scripts should, for the
         most part, have no reason to use this property.
         """
-        connections_section = None
+        connections_section: AttrDict | None = None
         if secrets_singleton.load_if_toml_exists():
             connections_section = secrets_singleton.get("connections")
 
-        if type(connections_section) is not AttrDict:
+        if connections_section is None or type(connections_section) is not AttrDict:
             return AttrDict({})
 
-        return connections_section.get(self._connection_name, AttrDict({}))
+        return cast(
+            "AttrDict", connections_section.get(self._connection_name, AttrDict({}))
+        )
 
     def reset(self) -> None:
         """Reset this connection so that it gets reinitialized the next time it's used.
@@ -172,3 +174,30 @@ class BaseConnection(ABC, Generic[RawConnectionT]):
             The underlying connection object.
         """
         raise NotImplementedError
+
+    @classmethod
+    def scope(cls) -> Literal["global", "session"]:
+        """Returns the scope of this connection type.
+
+        "global" connection instances will be cached globally, and typically created
+        once during the lifetime of an application. "session" connection instances will
+        be cached per session, and typically will be created once per user session.
+
+        Returns
+        -------
+        "global" or "session"
+            The scope of this connection type.
+        """
+        return "global"
+
+    def close(self) -> None:
+        """A function to invoke when this connection needs to be cleaned up.
+
+        ``close`` is registered as an ``on_release`` hook in the resource cache when a
+        connection is created with ``st.connection``.
+
+        Returns
+        -------
+        None
+        """
+        # NOTE: Default implementation is intentionally a no-op.

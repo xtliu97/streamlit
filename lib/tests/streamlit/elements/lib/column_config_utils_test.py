@@ -1,4 +1,4 @@
-# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -345,9 +345,9 @@ class ColumnConfigUtilsTest(unittest.TestCase):
             )
 
         # Check that non-editable column types are compatible to all data kinds:
-        for data_kind in ColumnDataKind:
-            assert is_type_compatible("list", data_kind), (
-                f"Expected list to be compatible with {data_kind}"
+        for data_kind in list(ColumnDataKind):
+            assert is_type_compatible("image", data_kind), (
+                f"Expected image to be compatible with {data_kind}"
             )
 
     def test_process_config_mapping_is_clone(self):

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,22 +14,20 @@
  * limitations under the License.
  */
 
-import React, { memo } from "react"
+import { memo } from "react"
 
-import { AttachFile } from "@emotion-icons/material-outlined"
+import { Add } from "@emotion-icons/material-rounded"
 
-import { EmotionTheme } from "~lib/theme"
 import Icon from "~lib/components/shared/Icon"
-import BaseButton, { BaseButtonKind } from "~lib/components/shared/BaseButton"
-import TooltipIcon from "~lib/components/shared/TooltipIcon"
+import Tooltip, { Placement } from "~lib/components/shared/Tooltip"
+import { StyledSendIconButton } from "~lib/components/widgets/ChatInput/styled-components"
 import { AcceptFileValue } from "~lib/util/utils"
-import { Placement } from "~lib/components/shared/Tooltip"
 
 import {
-  StyledFileUploadButton,
-  StyledFileUploadButtonContainer,
-  StyledVerticalDivider,
-} from "./styled-components"
+  configureFileInputProps,
+  getUploadDescription,
+} from "./fileUploadUtils"
+import { StyledFileUploadButton } from "./styled-components"
 
 export interface Props {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TODO: Replace 'any' with a more specific type.
@@ -38,7 +36,6 @@ export interface Props {
   getInputProps: any
   acceptFile: AcceptFileValue
   disabled: boolean
-  theme: EmotionTheme
 }
 
 const ChatFileUploadButton = ({
@@ -46,35 +43,35 @@ const ChatFileUploadButton = ({
   getInputProps,
   acceptFile,
   disabled,
-  theme,
-}: Props): React.ReactElement => (
-  <StyledFileUploadButtonContainer disabled={disabled}>
+}: Props): React.ReactElement => {
+  const inputProps = configureFileInputProps(getInputProps(), acceptFile)
+
+  // React-dropzone's root props include `tabIndex=0` by default, which makes the
+  // wrapper a keyboard focus target. Since we render an actual <button> inside
+  // the wrapper, we don't want two tab stops for the same control.
+  const rootProps = getRootProps({ tabIndex: -1 })
+
+  return (
     <StyledFileUploadButton
       data-testid="stChatInputFileUploadButton"
       disabled={disabled}
-      {...getRootProps()}
+      {...rootProps}
     >
-      <input {...getInputProps()} />
-      <TooltipIcon
-        content={`Upload or drag and drop ${
-          acceptFile === AcceptFileValue.Multiple ? "files" : "a file"
-        }`}
+      <input {...inputProps} />
+      <Tooltip
+        content={`Upload or drag and drop ${getUploadDescription(acceptFile)}`}
         placement={Placement.TOP}
         onMouseEnterDelay={500}
       >
-        <BaseButton kind={BaseButtonKind.MINIMAL} disabled={disabled}>
-          <Icon
-            content={AttachFile}
-            size="lg"
-            color={
-              disabled ? theme.colors.fadedText40 : theme.colors.fadedText60
-            }
-          />
-        </BaseButton>
-      </TooltipIcon>
+        <StyledSendIconButton
+          disabled={disabled}
+          aria-label={`Upload ${getUploadDescription(acceptFile)}`}
+        >
+          <Icon content={Add} size="xl" color="inherit" />
+        </StyledSendIconButton>
+      </Tooltip>
     </StyledFileUploadButton>
-    <StyledVerticalDivider />
-  </StyledFileUploadButtonContainer>
-)
+  )
+}
 
 export default memo(ChatFileUploadButton)

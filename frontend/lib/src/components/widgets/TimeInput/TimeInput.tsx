@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,33 +14,35 @@
  * limitations under the License.
  */
 
-import React, { memo, ReactElement, useCallback, useContext } from "react"
+import { memo, ReactElement, useCallback, useContext } from "react"
 
-import { TimePicker as UITimePicker } from "baseui/timepicker"
-import { StyledClearIcon } from "baseui/input/styled-components"
 import { ChevronDown } from "baseui/icon"
+import { StyledClearIcon } from "baseui/input/styled-components"
+import { TimePicker as UITimePicker } from "baseui/timepicker"
 
 import { TimeInput as TimeInputProto } from "@streamlit/protobuf"
 
-import { WidgetStateManager } from "~lib/WidgetStateManager"
+import IsSidebarContext from "~lib/components/core/IsSidebarContext"
+import { getBorderColor } from "~lib/components/shared/Base/styled-components"
+import {
+  WidgetLabel,
+  WidgetLabelHelpIcon,
+} from "~lib/components/widgets/BaseWidget"
 import {
   useBasicWidgetState,
   ValueWithSource,
 } from "~lib/hooks/useBasicWidgetState"
-import IsSidebarContext from "~lib/components/core/IsSidebarContext"
-import {
-  StyledWidgetLabelHelp,
-  WidgetLabel,
-} from "~lib/components/widgets/BaseWidget"
-import TooltipIcon from "~lib/components/shared/TooltipIcon"
-import { Placement } from "~lib/components/shared/Tooltip"
+import { useEmotionTheme } from "~lib/hooks/useEmotionTheme"
 import {
   isNullOrUndefined,
   labelVisibilityProtoValueToEnum,
 } from "~lib/util/utils"
-import { useEmotionTheme } from "~lib/hooks/useEmotionTheme"
+import { WidgetStateManager } from "~lib/WidgetStateManager"
 
-import { StyledClearIconContainer } from "./styled-components"
+import {
+  StyledClearIconContainer,
+  StyledTimeDropdownListItem,
+} from "./styled-components"
 
 export interface Props {
   disabled: boolean
@@ -79,13 +81,21 @@ function TimeInput({
 
         overrides: {
           ControlContainer: {
-            style: {
-              height: theme.sizes.minElementHeight,
-              // Baseweb requires long-hand props, short-hand leads to weird bugs & warnings.
-              borderLeftWidth: theme.sizes.borderWidth,
-              borderRightWidth: theme.sizes.borderWidth,
-              borderTopWidth: theme.sizes.borderWidth,
-              borderBottomWidth: theme.sizes.borderWidth,
+            style: ({ $isFocused }: { $isFocused: boolean }) => {
+              const borderColor = getBorderColor(theme.colors, $isFocused)
+              return {
+                height: theme.sizes.minElementHeight,
+                // Baseweb requires long-hand props, short-hand leads to weird bugs & warnings.
+                borderLeftWidth: theme.sizes.borderWidth,
+                borderRightWidth: theme.sizes.borderWidth,
+                borderTopWidth: theme.sizes.borderWidth,
+                borderBottomWidth: theme.sizes.borderWidth,
+
+                borderTopColor: borderColor,
+                borderRightColor: borderColor,
+                borderBottomColor: borderColor,
+                borderLeftColor: borderColor,
+              }
             },
           },
 
@@ -127,12 +137,7 @@ function TimeInput({
           },
 
           DropdownListItem: {
-            style: () => ({
-              paddingRight: theme.spacing.lg,
-              paddingLeft: theme.spacing.lg,
-              paddingTop: theme.spacing.sm,
-              paddingBottom: theme.spacing.sm,
-            }),
+            component: StyledTimeDropdownListItem,
           },
 
           // Nudge the dropdown menu by 1px so the focus state doesn't get cut off
@@ -198,12 +203,7 @@ function TimeInput({
         )}
       >
         {element.help && (
-          <StyledWidgetLabelHelp>
-            <TooltipIcon
-              content={element.help}
-              placement={Placement.TOP_RIGHT}
-            />
-          </StyledWidgetLabelHelp>
+          <WidgetLabelHelpIcon content={element.help} label={element.label} />
         )}
       </WidgetLabel>
       <UITimePicker
@@ -227,7 +227,7 @@ function TimeInput({
             overrides={{
               Svg: {
                 style: {
-                  color: theme.colors.darkGray,
+                  color: theme.colors.grayTextColor,
                   // setting this width and height makes the clear-icon align with dropdown arrows of other input fields
                   padding: theme.spacing.threeXS,
                   height: theme.sizes.clearIconSize,

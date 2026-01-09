@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,12 +69,18 @@ export const StyledToolbar = styled.div(({ theme }) => ({
 
 export const StyledToolbarElementContainer = styled.div<{
   width?: number | string
-  height?: number
+  height?: number | string
   useContainerWidth: boolean
   topCentered?: boolean
-}>(({ height, useContainerWidth, topCentered }) => ({
+  useContainerHeight?: boolean
+}>(({ height, useContainerWidth, topCentered, useContainerHeight }) => ({
   position: "relative",
-  height: useContainerWidth && height ? height : "fit-content",
+  height:
+    useContainerWidth && height
+      ? height
+      : useContainerHeight
+        ? height || "100%"
+        : "fit-content",
   maxWidth: "100%",
   width: useContainerWidth ? "100%" : "fit-content",
   ...(topCentered

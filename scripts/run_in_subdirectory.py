@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,15 +27,9 @@ if __name__ not in ("__main__", "__mp_main__"):
 
 
 def is_relative_to(path: Path, *other: str) -> bool:
-    """Return True if the path is relative to another path or False.
+    """Return True if the path is relative to another path or False."""
 
-    This function is backported from Python 3.9 - Path.relativeto.
-    """
-    try:
-        path.relative_to(*other)
-        return True
-    except ValueError:
-        return False
+    return path.is_relative_to(*other)
 
 
 def display_usage() -> None:

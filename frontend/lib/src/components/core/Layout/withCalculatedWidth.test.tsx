@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-import React, { FC } from "react"
+import { FC } from "react"
 
-import { describe, expect, it, vi } from "vitest"
 import { render, screen } from "@testing-library/react"
+import { describe, expect, it, vi } from "vitest"
 
 import { useResizeObserver } from "~lib/hooks/useResizeObserver"
 

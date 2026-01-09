@@ -1,4 +1,4 @@
-# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ from e2e_playwright.shared.app_utils import expect_no_skeletons
 def configure_custom_header_font_sizes():
     """Configure custom theme."""
     os.environ["STREAMLIT_THEME_HEADING_FONT_SIZES"] = json.dumps(
-        ["3rem", "2.75rem", "2.5rem"]
+        ["3rem", "45.5px", "2.5rem"]
     )
     # Configurable separately in sidebar
     os.environ["STREAMLIT_THEME_SIDEBAR_HEADING_FONT_SIZES"] = json.dumps(

@@ -1,4 +1,4 @@
-# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ from parameterized import parameterized
 
 import streamlit as st
 from streamlit.elements.lib.policies import _LOGGER
-from streamlit.errors import StreamlitAPIException
+from streamlit.errors import StreamlitAPIException, StreamlitValueError
 from streamlit.proto.LabelVisibilityMessage_pb2 import LabelVisibilityMessage
 from streamlit.proto.Metric_pb2 import Metric as MetricProto
 from tests.delta_generator_test_case import DeltaGeneratorTestCase
@@ -82,7 +82,7 @@ class MetricTest(DeltaGeneratorTestCase):
     def test_label_and_value_and_delta_and_delta_color(self):
         """Test that metric can be called with label, value, delta, and delta
         colors passed in."""
-        st.metric("label_test", "123", -321, "normal")
+        st.metric("label_test", "123", -321, delta_color="normal")
         c = self.get_delta_from_queue().new_element.metric
         assert c.label == "label_test"
         assert c.body == "123"
@@ -92,15 +92,16 @@ class MetricTest(DeltaGeneratorTestCase):
 
     def test_value(self):
         """Test that metric delta returns the correct proto value"""
-        arg_values = ["some str", 123, -1.234, None]
+        arg_values = ["some str", 123, -1.234, None, "**markdown** _support_"]
         proto_values = [
             "some str",
             "123",
             "-1.234",
             "—",
+            "**markdown** _support_",
         ]
 
-        for arg_value, proto_value in zip(arg_values, proto_values):
+        for arg_value, proto_value in zip(arg_values, proto_values, strict=False):
             st.metric("label_test", arg_value)
 
             c = self.get_delta_from_queue().new_element.metric
@@ -109,10 +110,32 @@ class MetricTest(DeltaGeneratorTestCase):
 
     def test_delta_values(self):
         """Test that metric delta returns the correct proto value"""
-        arg_values = [" -253", "+25", "26", 123, -123, 1.234, -1.5, None, ""]
-        delta_values = ["-253", "+25", "26", "123", "-123", "1.234", "-1.5", "", ""]
+        arg_values = [
+            " -253",
+            "+25",
+            "26",
+            123,
+            -123,
+            1.234,
+            -1.5,
+            None,
+            "",
+            "**markdown** _support_",
+        ]
+        delta_values = [
+            "-253",
+            "+25",
+            "26",
+            "123",
+            "-123",
+            "1.234",
+            "-1.5",
+            "",  # None returns empty string
+            "",  # Empty string returns empty string
+            "**markdown** _support_",
+        ]
 
-        for arg_value, delta_value in zip(arg_values, delta_values):
+        for arg_value, delta_value in zip(arg_values, delta_values, strict=False):
             st.metric("label_test", "4312", arg_value)
 
             c = self.get_delta_from_queue().new_element.metric
@@ -159,14 +182,64 @@ class MetricTest(DeltaGeneratorTestCase):
             color_value,
             direction_value,
         ) in zip(
-            arg_delta_values, arg_delta_color_values, color_values, direction_values
+            arg_delta_values,
+            arg_delta_color_values,
+            color_values,
+            direction_values,
+            strict=False,
         ):
-            st.metric("label_test", "4312", arg_delta_value, arg_delta_color_value)
+            st.metric(
+                "label_test", "4312", arg_delta_value, delta_color=arg_delta_color_value
+            )
 
             c = self.get_delta_from_queue().new_element.metric
             assert c.label == "label_test"
             assert c.color == color_value
             assert c.direction == direction_value
+
+    def test_delta_arrow_default(self):
+        """Test that metric delta arrow defaults to auto."""
+        st.metric("label_test", "123", 123)
+
+        c = self.get_delta_from_queue().new_element.metric
+        assert c.direction == MetricProto.MetricDirection.UP
+
+    @parameterized.expand(
+        [
+            ("auto", 5, MetricProto.MetricDirection.UP, MetricProto.MetricColor.GREEN),
+            ("up", -5, MetricProto.MetricDirection.UP, MetricProto.MetricColor.RED),
+            (
+                "down",
+                5,
+                MetricProto.MetricDirection.DOWN,
+                MetricProto.MetricColor.GREEN,
+            ),
+            ("off", 5, MetricProto.MetricDirection.NONE, MetricProto.MetricColor.GREEN),
+        ]
+    )
+    def test_delta_arrow_values(
+        self,
+        delta_arrow_value,
+        delta,
+        expected_direction,
+        expected_color,
+    ):
+        """Test that metric overrides direction according to delta arrow setting."""
+        st.metric(
+            "label_test",
+            "123",
+            delta,
+            delta_arrow=delta_arrow_value,
+        )
+
+        c = self.get_delta_from_queue().new_element.metric
+        assert c.direction == expected_direction
+        assert c.color == expected_color
+
+    def test_delta_arrow_invalid(self):
+        """Test that invalid delta arrow raises an error."""
+        with pytest.raises(StreamlitValueError):
+            st.metric("label_test", "123", 5, delta_arrow="invalid")  # type: ignore[arg-type]
 
     def test_metric_in_column(self):
         col1, col2, col3, col4, col5 = st.columns(5)
@@ -223,8 +296,7 @@ class MetricTest(DeltaGeneratorTestCase):
 
         assert str(exc.value) == (
             "'[1, 2, 3]' is of type <class 'list'>, which is not an accepted type. "
-            "value only accepts: int, float, str, or None. "
-            "Please convert the value to an accepted type."
+            "Please convert the value to an accepted number type."
         )
 
     def test_invalid_delta(self):
@@ -233,18 +305,46 @@ class MetricTest(DeltaGeneratorTestCase):
 
         assert str(exc.value) == (
             "'[123]' is of type <class 'list'>, which is not an accepted type. "
-            "delta only accepts: int, float, str, or None. "
-            "Please convert the value to an accepted type."
+            "Please convert the value to an accepted number type."
         )
 
     def test_invalid_delta_color(self):
         with pytest.raises(StreamlitAPIException) as exc:
-            st.metric("Hello World.", 123, 0, "Invalid")
+            st.metric("Hello World.", 123, 0, delta_color="Invalid")
 
-        assert (
-            str(exc.value)
-            == "'Invalid' is not an accepted value. delta_color only accepts: 'normal', 'inverse', or 'off'"
-        )
+        assert "'Invalid' is not an accepted value" in str(exc.value)
+
+    @parameterized.expand(
+        [
+            ("red", MetricProto.MetricColor.RED),
+            ("orange", MetricProto.MetricColor.ORANGE),
+            ("yellow", MetricProto.MetricColor.YELLOW),
+            ("green", MetricProto.MetricColor.GREEN),
+            ("blue", MetricProto.MetricColor.BLUE),
+            ("violet", MetricProto.MetricColor.VIOLET),
+            ("gray", MetricProto.MetricColor.GRAY),
+            ("grey", MetricProto.MetricColor.GRAY),
+            ("primary", MetricProto.MetricColor.PRIMARY),
+        ]
+    )
+    def test_delta_color_named_colors(self, delta_color_value, expected_proto_color):
+        """Test that metric delta_color accepts named color values."""
+        st.metric("label_test", "123", 5, delta_color=delta_color_value)
+
+        c = self.get_delta_from_queue().new_element.metric
+        assert c.label == "label_test"
+        assert c.color == expected_proto_color
+        # Arrow direction should still be based on delta sign (positive = UP)
+        assert c.direction == MetricProto.MetricDirection.UP
+
+    def test_delta_color_named_color_with_negative_delta(self):
+        """Test that named colors work with negative delta (arrow points down)."""
+        st.metric("label_test", "123", -5, delta_color="blue")
+
+        c = self.get_delta_from_queue().new_element.metric
+        assert c.color == MetricProto.MetricColor.BLUE
+        # Arrow direction should still be based on delta sign (negative = DOWN)
+        assert c.direction == MetricProto.MetricDirection.DOWN
 
     def test_help(self):
         st.metric("label_test", value="500", help="   help text")
@@ -287,19 +387,19 @@ class MetricTest(DeltaGeneratorTestCase):
         test_cases = [
             (
                 "invalid",
-                "Invalid height value: 'invalid'. Height must be either an integer (pixels), 'stretch', or 'content'.",
+                "Height must be either a positive integer (pixels), 'stretch', or 'content'.",
             ),
             (
                 -100,
-                "Invalid height value: -100. Height must be either an integer (pixels), 'stretch', or 'content'.",
+                "Height must be either a positive integer (pixels), 'stretch', or 'content'.",
             ),
             (
                 0,
-                "Invalid height value: 0. Height must be either an integer (pixels), 'stretch', or 'content'.",
+                "Height must be either a positive integer (pixels), 'stretch', or 'content'.",
             ),
             (
                 100.5,
-                "Invalid height value: 100.5. Height must be either an integer (pixels), 'stretch', or 'content'.",
+                "Height must be either a positive integer (pixels), 'stretch', or 'content'.",
             ),
         ]
 
@@ -308,7 +408,7 @@ class MetricTest(DeltaGeneratorTestCase):
                 with pytest.raises(StreamlitAPIException) as exc:
                     st.metric("label_test", "123", height=height_value)
 
-                assert str(exc.value) == expected_error_message
+                assert expected_error_message in str(exc.value)
 
     def test_width_types(self):
         """Test that metric can be called with different width types."""
@@ -337,19 +437,19 @@ class MetricTest(DeltaGeneratorTestCase):
         test_cases = [
             (
                 "invalid",
-                "Invalid width value: 'invalid'. Width must be either an integer (pixels), 'stretch', or 'content'.",
+                "Width must be either a positive integer (pixels), 'stretch', or 'content'.",
             ),
             (
                 -100,
-                "Invalid width value: -100. Width must be either an integer (pixels), 'stretch', or 'content'.",
+                "Width must be either a positive integer (pixels), 'stretch', or 'content'.",
             ),
             (
                 0,
-                "Invalid width value: 0. Width must be either an integer (pixels), 'stretch', or 'content'.",
+                "Width must be either a positive integer (pixels), 'stretch', or 'content'.",
             ),
             (
                 100.5,
-                "Invalid width value: 100.5. Width must be either an integer (pixels), 'stretch', or 'content'.",
+                "Width must be either a positive integer (pixels), 'stretch', or 'content'.",
             ),
         ]
 
@@ -358,4 +458,147 @@ class MetricTest(DeltaGeneratorTestCase):
                 with pytest.raises(StreamlitAPIException) as exc:
                     st.metric("label_test", "123", width=width_value)
 
-                assert str(exc.value) == expected_error_message
+                assert expected_error_message in str(exc.value)
+
+    def test_chart_data_none(self):
+        """Test that metric works with default chart_data=None."""
+        st.metric("label_test", "123")
+
+        c = self.get_delta_from_queue().new_element.metric
+        assert c.label == "label_test"
+        assert c.body == "123"
+        assert len(c.chart_data) == 0
+
+    def test_chart_data_valid_list(self):
+        """Test that metric can be called with valid chart_data list."""
+        chart_data = [1, 2, 3, 4, 5]
+        st.metric("label_test", "123", chart_data=chart_data)
+
+        c = self.get_delta_from_queue().new_element.metric
+        assert c.label == "label_test"
+        assert c.body == "123"
+        assert list(c.chart_data) == [1.0, 2.0, 3.0, 4.0, 5.0]
+
+    def test_chart_data_valid_mixed_numeric(self):
+        """Test that metric can be called with mixed numeric types in chart_data."""
+        chart_data = [1, 2.5, -3, 0, 10.7]
+        st.metric("label_test", "123", chart_data=chart_data)
+
+        c = self.get_delta_from_queue().new_element.metric
+        assert c.label == "label_test"
+        assert c.body == "123"
+        assert list(c.chart_data) == [1.0, 2.5, -3.0, 0.0, 10.7]
+
+    def test_chart_data_string_numbers(self):
+        """Test that metric can convert string numbers in chart_data."""
+        chart_data = ["1", "2.5", "-3", "0"]
+        st.metric("label_test", "123", chart_data=chart_data)
+
+        c = self.get_delta_from_queue().new_element.metric
+        assert c.label == "label_test"
+        assert c.body == "123"
+        assert list(c.chart_data) == [1.0, 2.5, -3.0, 0.0]
+
+    def test_chart_data_empty_list(self):
+        """Test that metric works with empty chart_data list."""
+        st.metric("label_test", "123", chart_data=[])
+
+        c = self.get_delta_from_queue().new_element.metric
+        assert c.label == "label_test"
+        assert c.body == "123"
+        assert len(c.chart_data) == 0
+
+    def test_chart_data_invalid_values(self):
+        """Test that metric raises error with invalid chart_data values."""
+        chart_data = [1, 2, "invalid", 4]
+
+        with pytest.raises(StreamlitAPIException) as exc:
+            st.metric("label_test", "123", chart_data=chart_data)
+
+        assert "Only numeric values are supported for chart data sequence" in str(
+            exc.value
+        )
+        assert "'invalid' is of type <class 'str'>" in str(exc.value)
+        assert "cannot be converted to float" in str(exc.value)
+
+    def test_chart_data_invalid_non_sequence(self):
+        """Test that metric raises error with invalid chart_data non-sequence values."""
+        chart_data = [1, 2, {"invalid": "dict"}, 4]
+
+        with pytest.raises(StreamlitAPIException) as exc:
+            st.metric("label_test", "123", chart_data=chart_data)
+
+        assert "Only numeric values are supported for chart data sequence" in str(
+            exc.value
+        )
+
+    @parameterized.expand(
+        [
+            ("line", MetricProto.ChartType.LINE),
+            ("bar", MetricProto.ChartType.BAR),
+            ("area", MetricProto.ChartType.AREA),
+        ]
+    )
+    def test_chart_type_valid_values(self, chart_type_value, expected_proto_value):
+        """Test that metric can be called with valid chart_type values."""
+        st.metric("label_test", "123", chart_type=chart_type_value)
+
+        c = self.get_delta_from_queue().new_element.metric
+        assert c.label == "label_test"
+        assert c.body == "123"
+        assert c.chart_type == expected_proto_value
+
+    def test_chart_type_default(self):
+        """Test that chart_type defaults to line."""
+        st.metric("label_test", "123")
+
+        c = self.get_delta_from_queue().new_element.metric
+        assert c.label == "label_test"
+        assert c.body == "123"
+        assert c.chart_type == MetricProto.ChartType.LINE
+
+    def test_chart_data_and_chart_type_together(self):
+        """Test that metric can be called with both chart_data and chart_type."""
+        chart_data = [10, 20, 15, 25, 30]
+        st.metric("label_test", "123", chart_data=chart_data, chart_type="bar")
+
+        c = self.get_delta_from_queue().new_element.metric
+        assert c.label == "label_test"
+        assert c.body == "123"
+        assert list(c.chart_data) == [10.0, 20.0, 15.0, 25.0, 30.0]
+        assert c.chart_type == MetricProto.ChartType.BAR
+
+    def test_format_none(self):
+        """Test that metric works with default format=None."""
+        st.metric("label_test", "123")
+
+        c = self.get_delta_from_queue().new_element.metric
+        assert c.label == "label_test"
+        assert c.body == "123"
+        assert c.format == ""
+
+    @parameterized.expand(
+        [
+            ("plain", "plain"),
+            ("localized", "localized"),
+            ("percent", "percent"),
+            ("dollar", "dollar"),
+            ("euro", "euro"),
+            ("yen", "yen"),
+            ("accounting", "accounting"),
+            ("compact", "compact"),
+            ("scientific", "scientific"),
+            ("engineering", "engineering"),
+            ("bytes", "bytes"),
+            ("%.2f", "%.2f"),
+            ("$%d", "$%d"),
+        ]
+    )
+    def test_format_valid_values(self, format_value, expected_proto_value):
+        """Test that metric can be called with valid format values."""
+        st.metric("label_test", "123", format=format_value)
+
+        c = self.get_delta_from_queue().new_element.metric
+        assert c.label == "label_test"
+        assert c.body == "123"
+        assert c.format == expected_proto_value

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+ * Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
-import React, { forwardRef, memo, MouseEvent, ReactElement } from "react"
+import { forwardRef, memo, MouseEvent, ReactElement } from "react"
 
+import { MoreVert } from "@emotion-icons/material-rounded"
 import { StatefulMenu } from "baseui/menu"
 import { PLACEMENT, StatefulPopover } from "baseui/popover"
-import { MoreVert } from "@emotion-icons/material-rounded"
 
+import { MetricsManager } from "@streamlit/app/src/MetricsManager"
+import ScreenCastRecorder from "@streamlit/app/src/util/ScreenCastRecorder"
 import {
   BaseButton,
   BaseButtonKind,
@@ -32,8 +34,6 @@ import {
 } from "@streamlit/lib"
 import { Config, PageConfig } from "@streamlit/protobuf"
 import { notNullOrUndefined } from "@streamlit/utils"
-import ScreenCastRecorder from "@streamlit/app/src/util/ScreenCastRecorder"
-import { MetricsManager } from "@streamlit/app/src/MetricsManager"
 
 import {
   StyledCoreItem,

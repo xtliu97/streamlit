@@ -1,4 +1,4 @@
-# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2025)
+# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022-2026)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -95,10 +95,23 @@ def _create_connection(
     __create_connection.__qualname__ = (
         f"{__create_connection.__qualname__}_{ttl_str}_{max_entries}"
     )
+
+    scope = connection_class.scope()
+    if scope not in ("global", "session"):
+        raise StreamlitAPIException(
+            f"Connection class {connection_class} has scope '{scope}'. Valid values "
+            "are 'global' or 'session'."
+        )
+
+    def on_release_wrapped(connection: ConnectionClass) -> None:
+        connection.close()
+
     __create_connection = cache_resource(
         max_entries=max_entries,
         show_spinner="Running `st.connection(...)`.",
         ttl=ttl,
+        scope=scope,
+        on_release=on_release_wrapped,
     )(__create_connection)
 
     return __create_connection(name, connection_class, **kwargs)
@@ -220,7 +233,8 @@ def connection_factory(  # type: ignore
     - Any connection-specific configuration files.
 
     The connection returned from ``st.connection`` is internally cached with
-    ``st.cache_resource`` and is therefore shared between sessions.
+    ``st.cache_resource``. Connection types with a scope of ``"global"`` will be shared
+    between sessions.
 
     Parameters
     ----------
@@ -369,9 +383,7 @@ def connection_factory(  # type: ignore
     """
 
     if name.startswith(_USE_ENV_PREFIX):
-        # It'd be nice to use str.removeprefix() here, but we won't be able to do that
-        # until the minimum Python version we support is 3.9.
-        envvar_name = name[len(_USE_ENV_PREFIX) :]
+        envvar_name = name.removeprefix(_USE_ENV_PREFIX)
         name = os.environ[envvar_name]
 
     # type is a nice kwarg name for the st.connection user but is annoying to work with
