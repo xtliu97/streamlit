@@ -90,6 +90,7 @@ export interface DynamicIconProps {
   size?: IconSize
   testid?: string
   color?: string
+  style?: React.CSSProperties
 }
 
 const DynamicIconDispatcher = ({
@@ -139,7 +140,7 @@ const DynamicIconDispatcher = ({
 
 function createColorMapping(
   theme: EmotionTheme
-): Map<string, Partial<StyledMaterialIconProps>> {
+): Map<string, React.CSSProperties> {
   const { red, orange, green, blue, violet, gray, primary } =
     getMarkdownTextColors(theme)
 
@@ -169,13 +170,18 @@ export const DynamicIcon = (props: DynamicIconProps): React.ReactElement => {
   const theme: EmotionTheme = useEmotionTheme()
   const themeMode = hasLightBackgroundColor(theme) ? "light" : "dark"
   const colorMapping = createColorMapping(theme)
-  const colorStyle = parsedColor ? colorMapping.get(parsedColor) : {}
 
-  // Merge props: colorStyle from parsed icon overrides props.color if present
+  // Get color style from parsed color, or use color prop as fallback
+  const colorStyle = parsedColor
+    ? colorMapping.get(parsedColor)
+    : props.color
+      ? { color: props.color }
+      : undefined
+
   const mergedProps = {
     ...props,
-    ...colorStyle,
     iconValue: parsedIconValue,
+    style: { ...props.style, ...colorStyle },
   }
   return (
     <Suspense

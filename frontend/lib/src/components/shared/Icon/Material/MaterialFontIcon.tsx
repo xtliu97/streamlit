@@ -31,9 +31,7 @@ interface MaterialIconProps {
   margin?: string
   padding?: string
   testid?: string
-  background?: string
-  WebkitBackgroundClip?: string
-  WebkitTextFillColor?: string
+  style?: React.CSSProperties
 }
 
 const getDefaultProps = ({
@@ -50,18 +48,13 @@ const getDefaultProps = ({
 
 const MaterialFontIcon = ({
   iconName,
+  style,
   ...props
 }: MaterialIconProps): ReactElement => {
-  const extraColorStyle: React.CSSProperties = {
-    background: props.background || undefined,
-    WebkitBackgroundClip: props.WebkitBackgroundClip || undefined,
-    WebkitTextFillColor: props.WebkitTextFillColor || undefined,
-  }
-
   return (
     <StyledMaterialIcon
       {...getDefaultProps(props)}
-      style={extraColorStyle}
+      style={style}
       data-testid={props.testid || "stIconMaterial"}
       // Prevent the icon text from being translated
       // this would break the icon display in the UI.
