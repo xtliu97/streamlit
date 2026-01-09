@@ -66,7 +66,25 @@ def is_material_icon(maybe_icon: str) -> bool:
 
 
 def validate_icon_or_emoji(icon: str | None) -> str:
-    """Validate an icon or emoji and return it in normalized format if valid."""
+    """Validate an icon or emoji and return it in normalized format if valid.
+
+    Parameters
+    ----------
+    icon : str | None
+        The icon string to validate. Can be an emoji, material icon, colored
+        material icon (e.g., :red[:material/home:]), or None.
+
+    Returns
+    -------
+    str
+        The validated and normalized icon string, or empty string if None.
+
+    Raises
+    ------
+    StreamlitAPIException
+        If the icon format is invalid or not recognized as a valid emoji or
+        material icon.
+    """
     if icon is None:
         return ""
 
@@ -92,7 +110,24 @@ def validate_icon_or_emoji(icon: str | None) -> str:
 
 
 def validate_color(maybe_color: str) -> str:
-    """Validate a color name and return it in normalized format if valid."""
+    """Validate a color name and return it in normalized format if valid.
+
+    Parameters
+    ----------
+    maybe_color : str
+        The color name to validate.
+
+    Returns
+    -------
+    str
+        The validated color name.
+
+    Raises
+    ------
+    StreamlitAPIException
+        If the color name is not in the list of valid colors (blue, green, orange,
+        red, violet, gray, grey, rainbow, primary).
+    """
     valid_colors = {
         "blue",
         "green",
