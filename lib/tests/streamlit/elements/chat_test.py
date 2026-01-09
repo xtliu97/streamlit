@@ -101,6 +101,38 @@ class ChatTest(DeltaGeneratorTestCase):
         assert message_block.add_block.chat_message.avatar == expected["avatar"]
         assert message_block.add_block.chat_message.avatar_type == expected["type"]
 
+    def test_material_icon_avatar(self):
+        """Test that material icons can be used as avatars."""
+        message = st.chat_message("bot", avatar=":material/robot:")
+
+        with message:
+            pass
+
+        message_block = self.get_delta_from_queue()
+
+        assert message_block.add_block.chat_message.name == "bot"
+        assert message_block.add_block.chat_message.avatar == ":material/robot:"
+        assert (
+            message_block.add_block.chat_message.avatar_type
+            == BlockProto.ChatMessage.AvatarType.ICON
+        )
+
+    def test_colored_material_icon_avatar(self):
+        """Test that colored material icons can be used as avatars."""
+        message = st.chat_message("bot", avatar=":blue[:material/robot:]")
+
+        with message:
+            pass
+
+        message_block = self.get_delta_from_queue()
+
+        assert message_block.add_block.chat_message.name == "bot"
+        assert message_block.add_block.chat_message.avatar == ":blue[:material/robot:]"
+        assert (
+            message_block.add_block.chat_message.avatar_type
+            == BlockProto.ChatMessage.AvatarType.ICON
+        )
+
     def test_throws_invalid_avatar_exception(self):
         """Test that chat_message throws an StreamlitAPIException on invalid avatar input."""
         with pytest.raises(StreamlitAPIException):

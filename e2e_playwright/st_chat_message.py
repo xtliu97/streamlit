@@ -91,6 +91,12 @@ with st.chat_message("user", avatar=":material/airline_seat_recline_extra:"):
 with st.chat_message("AI", avatar=":material/photo_album:"):
     st.write("Hello from AI, non-emoji icon.")
 
+with st.chat_message("bot", avatar=":red[:material/smart_toy:]"):
+    st.write("Hello with red material icon.")
+
+with st.chat_message("bot", avatar=":rainbow[:material/palette:]"):
+    st.write("Hello with rainbow material icon.")
+
 query = "This is a hardcoded user message"
 sources = "example sources"
 llm_response = "some response"

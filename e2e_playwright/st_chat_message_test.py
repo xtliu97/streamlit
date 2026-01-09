@@ -24,12 +24,12 @@ def test_renders_chat_messages_correctly_1(
     """Test if the chat messages render correctly."""
     # Wait a bit more to allow all images to load:
     chat_message_elements = themed_app.get_by_test_id("stChatMessage")
-    expect(chat_message_elements).to_have_count(21)
+    expect(chat_message_elements).to_have_count(23)
 
     # rerun to populate session state chat message
     rerun_app(themed_app)
 
-    expect(chat_message_elements).to_have_count(23)
+    expect(chat_message_elements).to_have_count(25)
 
     descriptive_names = [
         "user_message",
@@ -46,6 +46,8 @@ def test_renders_chat_messages_correctly_1(
         "message_with_cat_path_avatar",
         "message_with_material_icon_avatar_airline_seat",
         "message_with_material_icon_photo_album",
+        "message_with_red_colored_material_icon",
+        "message_with_rainbow_colored_material_icon",
         "session_state_message_one",
         "session_state_message_two",
         "session_state_message_three",
@@ -58,7 +60,7 @@ def test_renders_chat_messages_correctly_1(
     ]
 
     for i, element in enumerate(chat_message_elements.all()):
-        if i == 19:
+        if i == 21:
             # Ignore the nested inner message
             continue
         element.scroll_into_view_if_needed()
